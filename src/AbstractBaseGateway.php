@@ -22,16 +22,16 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * 由于构造函数是protected，只有通过闭包形式将构造权传给Factory类
      */
     public static function init(): void {
-        $func_construct = (function ($model_name, ...$index): AbstractBaseGateway {
+        $func_construct = (function (string $model_name, ...$index): AbstractBaseGateway {
             return new $model_name(...$index);
         });
         Factory::init($func_construct->bindTo(new AbstractBaseGatewayConstructHelper()));
     }
     public static function getPropertyList(): array {
-        return array_merge(array_keys(static::$property_map), static::INDEX);
+        return array_keys(static::$property_map);
     }
     protected static function hasProperty(string $key): bool {
-        return array_key_exists($key, static::$property_map);
+        return array_key_exists($key, static::$property_map) && ! in_array($key, static::INDEX);
     }
     public static function getFactory(): Factory {
         $factory = \SysContext::hGet('factory', static::$model_name);
@@ -45,42 +45,35 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Selector.php中定义class Selector
      */
     public static function getSelector(bool $use_slave_DB = true): \Swango\Model\Operater\Selector {
-        $factory = static::getFactory();
-        $name = static::$model_name . '\\Selector';
-        if ($use_slave_DB) {
-            if (! isset($factory->selector)) {
-                if (class_exists($name))
-                    $factory->selector = new $name($use_slave_DB, $factory, static::$select ?? null);
-                else
-                    $factory->selector = new \Swango\Model\Operater\Selector($use_slave_DB, $factory,
-                        static::$select ?? null);
+        $context_key = 'selector-' . ($use_slave_DB ? 's' : 'm');
+        $selector = \SysContext::hGet($context_key, static::$model_name);
+        if (! isset($selector)) {
+            $factory = static::getFactory();
+            $class_name = static::$model_name . '\\Selector';
+            if (class_exists($class_name)) {
+                $selector = new $class_name($use_slave_DB, $factory, static::$select ?? null);
+            } else {
+                $selector = new Operater\Selector($use_slave_DB, $factory, static::$select ?? null);
             }
-            return $factory->selector;
-        } else {
-            if (! isset($factory->selector_master)) {
-                if (class_exists($name))
-                    $factory->selector_master = new $name($use_slave_DB, $factory, static::$select ?? null);
-                else
-                    $factory->selector_master = new \Swango\Model\Operater\Selector($use_slave_DB, $factory,
-                        static::$select ?? null);
-            }
-            return $factory->selector_master;
+            \SysContext::hSet($context_key, static::$model_name, $selector);
         }
+        return $selector;
     }
     /**
      * 获取model对应的更新器
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Updator.php中定义class Updator
      */
     public static function getUpdator(): \Swango\Model\Operater\Updator {
-        $factory = static::getFactory();
-        if (! isset($factory->updator)) {
-            $name = static::$model_name . '\\Updator';
-            if (class_exists($name))
-                $factory->updator = new $name(static::$table_name);
+        $updator = \SysContext::hGet('updator', static::$model_name);
+        if (! isset($updator)) {
+            $class_name = static::$model_name . '\\Updator';
+            if (class_exists($class_name))
+                $updator = new $class_name(static::$table_name);
             else
-                $factory->updator = new \Swango\Model\Operater\Updator(static::$table_name);
+                $updator = new Operater\Updator(static::$table_name);
+            \SysContext::hSet('updator', static::$model_name, $updator);
         }
-        return $factory->updator;
+        return $updator;
     }
     /**
      *
@@ -105,9 +98,11 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      */
     protected function __construct(...$index) {
         $this->where = [];
-        foreach ($this::INDEX as $k=>$v) {
+        foreach (static::INDEX as $k=>$v) {
             $key = $index[$k];
-            if (is_numeric($key))
+            if (array_key_exists($v, static::$property_map))
+                $key = static::$property_map[$v]->intoProfile($key);
+            elseif (is_numeric($key))
                 $key = (int)$key;
             $this->where[$v] = $key;
         }
@@ -158,7 +153,9 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * @param mixed $value
      */
     public function __set($key, $value) {
-        if (self::hasProperty($key)) {
+        if (array_key_exists($key, $this->where))
+            throw new Exception\CannotChangeIndexException();
+        elseif (self::hasProperty($key)) {
             if ($value instanceof IdIndexedModel)
                 $value = $value->getId();
             $value = static::$property_map[$key]->intoProfile($value);
@@ -172,16 +169,19 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
             $this->{$key} = $value;
     }
     public function __isset($key) {
-        if (self::hasProperty($key)) {
+        if (array_key_exists($key, $this->where))
+            return true;
+        elseif (self::hasProperty($key)) {
             if (! property_exists($this->profile, $key))
                 $this->load();
             return isset($this->profile->{$key});
-        } elseif (array_key_exists($key, $this->where))
-            return true;
+        }
         return false;
     }
     public function __unset($key) {
-        if (self::hasProperty($key) && property_exists($this->profile, $key))
+        if (array_key_exists($key, $this->where))
+            throw new Exception\CannotChangeIndexException();
+        elseif (self::hasProperty($key) && property_exists($this->profile, $key))
             unset($this->profile->{$key});
         else
             trigger_error('Try to unset property not existed ' . static::$model_name . "($key)");

@@ -1,5 +1,8 @@
 <?php
 namespace Swango\Model\Operater;
+use Swango\Model\Factory;
+use Swango\Model\AbstractBaseGateway;
+
 /**
  *
  * @property \Swango\Db\Adapter $DB
@@ -13,10 +16,14 @@ class Selector {
      * @var $select \Sql\Select
      */
     public $DB_type, $factory, $select;
-    public function __construct(bool $use_slave_DB, \Factory $factory, ?\Sql\Select $select = null) {
+    public function __construct(bool $use_slave_DB, Factory $factory, ?\Sql\Select $select = null) {
         $this->DB_type = $use_slave_DB ? \Gateway::SLAVE_DB : \Gateway::MASTER_DB;
         $this->factory = $factory;
         $this->select = $select;
+    }
+    public function __destruct() {
+        $this->factory = null;
+        $this->select = null;
     }
     protected function getSelect(): \Sql\Select {
         if (isset($this->select))
@@ -61,7 +68,7 @@ class Selector {
         ])->where($where);
         return $this->DB->selectWith($select)->current()->c ?? 0;
     }
-    public function selectOne($where, $order = null, ?int $offset = null): \AbstractBaseGateway {
+    public function selectOne($where, $order = null, ?int $offset = null): AbstractBaseGateway {
         $select = $this->getSelect();
         $select->where($where);
         if (isset($order))
@@ -93,7 +100,7 @@ class Selector {
      * @param null|number|string ...$parameter
      * @return \AbstractBaseGateway
      */
-    public function selectOneWithSql($sql, ...$parameter): \AbstractBaseGateway {
+    public function selectOneWithSql($sql, ...$parameter): AbstractBaseGateway {
         $result = $this->DB->selectWith($sql, ...$parameter)->current();
         if (! $result) {
             $name = $this->factory->getNotFoundExceptionName();

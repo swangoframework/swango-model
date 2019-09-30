@@ -8,7 +8,6 @@ use Swango\Model\IdIndexedModel;
 /**
  *
  * @author fdrea
- * @property \Swango\Db\Db\master $DB
  *
  */
 class Addor {
@@ -23,10 +22,16 @@ class Addor {
         $this->property_map = &$property_map;
         $this->_insert_index = $factory->getIndex();
     }
+    public function __destruct() {
+        $this->factory = null;
+    }
     protected function insert(array $values = null): void {
         $insert = new \Sql\Insert($this->factory->table_name);
         $insert->values($values ?? $this->_insert_values);
-        $this->DB->query($insert);
+        $this->getDb()->query($insert);
+    }
+    protected function getDb(): \Swango\Db\Db\master {
+        return \Gateway::getAdapter(\Gateway::MASTER_DB);
     }
     public function reset(): self {
         $this->_insert_values = [];
@@ -41,8 +46,6 @@ class Addor {
         return array_key_exists($key, $this->_insert_values);
     }
     public function __get(string $key) {
-        if ($key === 'DB')
-            return \Gateway::getAdapter(\Gateway::MASTER_DB);
         if (array_key_exists($key, $this->_insert_values))
             return $this->_insert_values[$key];
         return null;
@@ -89,15 +92,15 @@ class Addor {
                 $ob = $this->factory->createObject($this->_insert_values, $this->_insert_values[$id_name]);
                 unset($this->_insert_values[$id_name]);
             } else
-                $ob = $this->factory->createObject($this->_insert_values, $this->DB->insert_id);
+                $ob = $this->factory->createObject($this->_insert_values, $this->getDb()->insert_id);
         } else {
             $index = [];
             foreach ($this->_insert_index as $key)
                 $index[] = $this->_insert_values[$key];
             $ob = $this->factory->createObject($this->_insert_values, ...$index);
         }
-        if ($this->DB->inTransaction())
-            $ob->_transaction_serial = $this->DB->getTransactionSerial();
+        if ($this->getDb()->inTransaction())
+            $ob->_transaction_serial = $this->getDb()->getTransactionSerial();
         $this->afterInsert($ob);
         return $ob;
     }
@@ -108,7 +111,7 @@ class Addor {
      * @return 插入的id（如果有的话）
      */
     public function doSql(string $sql, ...$parameter) {
-        $this->DB->query($sql, ...$parameter);
-        return $this->DB->insert_id;
+        $this->getDb()->query($sql, ...$parameter);
+        return $this->getDb()->insert_id;
     }
 }

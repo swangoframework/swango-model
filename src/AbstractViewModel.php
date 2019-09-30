@@ -1,6 +1,7 @@
 <?php
 namespace Swango\Model;
 /**
+ * 在代码层面使用JOIN封装实现的 mysql view模块，并支持update方法
  *
  * @deprecated 尚未完成
  *

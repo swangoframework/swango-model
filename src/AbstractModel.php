@@ -33,30 +33,32 @@ abstract class AbstractModel extends AbstractBaseGateway {
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Addor.php中定义class Addor
      */
     public static function getAddor(): \Swango\Model\Operater\Addor {
-        $factory = static::getFactory();
-        if (! isset($factory->addor)) {
-            $name = static::$model_name . '\\Addor';
-            if (class_exists($name))
-                $factory->addor = new $name($factory, static::$property_map);
+        $addor = \SysContext::hGet('addor', static::$model_name);
+        if (! isset($addor)) {
+            $factory = static::getFactory();
+            $class_name = static::$model_name . '\\Addor';
+            if (class_exists($class_name))
+                $addor = new $class_name($factory, static::$property_map);
             else
-                $factory->addor = new \Swango\Model\Operater\Addor($factory, static::$property_map);
+                $addor = new Operater\Addor($factory, static::$property_map);
         }
-        return $factory->addor;
+        return $addor;
     }
     /**
      * 获取model对应的删除器
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Deletor.php中定义class Deletor
      */
     public static function getDeletor(): \Swango\Model\Operater\Deletor {
-        $factory = static::getFactory();
-        if (! isset($factory->deletor)) {
-            $name = static::$model_name . '\\Deletor';
-            if (class_exists($name))
-                $factory->deletor = new $name(static::$table_name);
+        $deletor = \SysContext::hGet('deletor', static::$model_name);
+        if (! isset($deletor)) {
+            $class_name = static::$model_name . '\\Deletor';
+            if (class_exists($class_name))
+                $deletor = new $class_name(static::$table_name);
             else
-                $factory->deletor = new \Swango\Model\Operater\Deletor(static::$table_name);
+                $deletor = new Operater\Deletor(static::$table_name);
+            \SysContext::hSet('deletor', static::$model_name, $deletor);
         }
-        return $factory->deletor;
+        return $deletor;
     }
     protected static function loadFromDB($where, bool $for_update = false, bool $force_master_DB = false): ?\stdClass {
         if ($for_update || $force_master_DB)
@@ -101,8 +103,7 @@ abstract class AbstractModel extends AbstractBaseGateway {
      */
     public function update(array $new_profile): int {
         $DB = \Gateway::getAdapter(\Gateway::MASTER_DB);
-        $new = [];
-        $unset = [];
+        $new = $unset = [];
         $new_to_inject = new \stdClass();
         $property_map = static::$property_map;
         foreach ($new_profile as $k=>&$v) {

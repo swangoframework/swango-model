@@ -3,11 +3,6 @@ namespace Swango\Model;
 /**
  *
  * @author fdream
- * @property \Swango\Model\Operater\Addor $addor
- * @property \Swango\Model\Operater\Selector $selector
- * @property \Swango\Model\Operater\Selector $selector_master
- * @property \Swango\Model\Operater\Updator $updator
- * @property \Swango\Model\Operater\Deletor $deletor
  */
 class Factory {
     /**
@@ -21,7 +16,7 @@ class Factory {
     public static function convertIntoObject(&$profile): void {
         if (is_array($profile))
             $profile = (object)$profile;
-        elseif (! $profile instanceof \stdClass || $profile instanceof \Traversable) {
+        elseif ($profile instanceof \Traversable) {
             $profile_ob = new \stdClass();
             foreach ($profile as $k=>$v)
                 $profile_ob->{$k} = $v;
@@ -29,7 +24,8 @@ class Factory {
         }
     }
     public static function clearAllInstances(string ...$except): void {
-        if (WORKING_MODE === WORKING_MODE_CLI)
+        $print = defined('WORKING_MODE') && defined('WORKING_MODE_CLI') && WORKING_MODE === WORKING_MODE_CLI;
+        if ($print)
             echo sprintf('clear all instances: %dKb', memory_get_usage() / 1024);
         if (empty($except)) {
             foreach (\SysContext::get('factory') as $factory)
@@ -42,9 +38,8 @@ class Factory {
                 if (! array_key_exists($model_name, $map))
                     $factory->clearInstances();
         }
-        if (WORKING_MODE === WORKING_MODE_CLI)
+        if ($print)
             echo sprintf(" ==> %dKb\n", memory_get_usage() / 1024);
-        // gc_collect_cycles();
     }
     public static function init(\Closure $constructor): void {
         self::$func_ProfileNecessary = function (\stdClass $profile, ...$index) use ($constructor): ?\AbstractBaseGateway {
@@ -66,8 +61,7 @@ class Factory {
     public $table_name;
     protected $instances, $model_name, $model_name_without_path, $index, $not_found_exception_name, $create_instance_func, $exception_name_func;
     public function __construct(string $model_name, string $table_name) {
-        $time = microtime(1);
-
+        \SysContext::hSet('factory', $model_name, $this);
         $this->instances = [];
         $this->model_name = $model_name;
         $this->table_name = $table_name;
@@ -84,7 +78,12 @@ class Factory {
         // class_exists会调用autoloader，有文件IO。如果某个model没有定义NotFoundException就会极大的拖慢系统速度
         $this->exception_name_func = (class_exists($this->not_found_exception_name) ? self::$func_NotFoundExceptionExists : self::$func_NotFoundExceptionNotExists)->bindTo(
             $this);
-        \SysContext::hSet('factory', $model_name, $this);
+    }
+    public function __destruct() {
+        $this->clearInstances();
+        $this->create_instance_func = null;
+        $this->not_found_exception_name = null;
+        $this->exception_name_func = null;
     }
     public function getIndex(): array {
         return $this->index;
@@ -97,9 +96,9 @@ class Factory {
      *
      * @param mixed $profile
      * @param mixed ...$index
-     * @throws \CannotFindIndexInProfileException
-     * @throws \IncorrectIndexCountException
-     * @return \AbstractModel|NULL
+     * @throws Exception\CannotFindIndexInProfileException
+     * @throws Exception\IncorrectIndexCountException
+     * @return AbstractBaseGateway|NULL
      */
     public function createObject($profile, ...$index): ?AbstractBaseGateway {
         self::convertIntoObject($profile);
@@ -120,15 +119,13 @@ class Factory {
             return null;
         /**
          *
-         * @var $instance \AbstractModel
+         * @var $instance AbstractBaseGateway
          */
         $instance->injectProfile($profile);
         return $instance;
     }
-    public function clearInstances(bool $gc_collect_cycles = false): self {
+    public function clearInstances(): self {
         $this->instances = [];
-        if ($gc_collect_cycles)
-            gc_collect_cycles();
         return $this;
     }
     public function hasInstance(...$index): bool {
@@ -144,45 +141,5 @@ class Factory {
         $k = implode('`', $index);
         if (array_key_exists($k, $this->instances))
             unset($this->instances[$k]);
-    }
-    /**
-     * 执行清理逻辑时，清理掉所有会引起循环引用的部分
-     */
-    public function clear(): void {
-        if (defined('WORKING_MODE') && defined('WORKING_MODE_CLI') && WORKING_MODE === WORKING_MODE_CLI) {
-            $this->instances = [];
-            if (isset($this->addor))
-                unset($this->addor);
-            if (isset($this->selector))
-                unset($this->selector);
-            if (isset($this->selector_master))
-                unset($this->selector_master);
-            if (isset($this->updator))
-                unset($this->updator);
-            if (isset($this->deletor))
-                unset($this->deletor);
-        } else {
-            unset($this->instances);
-            unset($this->create_instance_func);
-            unset($this->exception_name_func);
-            if (isset($this->addor)) {
-                unset($this->addor->factory);
-                unset($this->addor);
-            }
-            if (isset($this->selector)) {
-                unset($this->selector->factory);
-                unset($this->selector);
-            }
-            if (isset($this->selector_master)) {
-                unset($this->selector_master->factory);
-                unset($this->selector_master);
-            }
-            if (isset($this->updator)) {
-                unset($this->updator);
-            }
-            if (isset($this->deletor)) {
-                unset($this->deletor);
-            }
-        }
     }
 }
