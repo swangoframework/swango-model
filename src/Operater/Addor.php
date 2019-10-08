@@ -30,7 +30,7 @@ class Addor {
         $insert->values($values ?? $this->_insert_values);
         $this->getDb()->query($insert);
     }
-    protected function getDb(): \Swango\Db\Db\master {
+    protected function getDb(): \Swango\Db\Adapter\master {
         return \Gateway::getAdapter(\Gateway::MASTER_DB);
     }
     public function reset(): self {

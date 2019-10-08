@@ -30,6 +30,9 @@ class Selector {
             return clone $this->select;
         return new \Sql\Select($this->factory->table_name);
     }
+    protected function getDb(): \Swango\Db\Adapter {
+        return \Gateway::getAdapter($this->DB_type);
+    }
     /**
      * 在生成起析构时，会清理掉函数中的所有对象。所以不用担心未遍历完就报错导致的协程泄露
      *
@@ -44,7 +47,7 @@ class Selector {
     public function exists($where): bool {
         $select = $this->getSelect();
         $select->where($where)->limit(1);
-        $resultset = $this->DB->query($select);
+        $resultset = $this->getDb()->query($select);
         if (! is_array($resultset) || count($resultset) === 0)
             return false;
         $this->factory->createObject(current($resultset));
@@ -55,7 +58,7 @@ class Selector {
         $select->columns([
             's' => new \Sql\Expression("SUM(`$column`)")
         ])->where($where);
-        return $this->DB->selectWith($select)->current()->s ?? 0;
+        return $this->getDb()->selectWith($select)->current()->s ?? 0;
     }
     public function getCount($where, string $column = '*'): int {
         if ($column == '*')
@@ -66,7 +69,7 @@ class Selector {
         $select->columns([
             'c' => new \Sql\Expression($expression)
         ])->where($where);
-        return $this->DB->selectWith($select)->current()->c ?? 0;
+        return $this->getDb()->selectWith($select)->current()->c ?? 0;
     }
     public function selectOne($where, $order = null, ?int $offset = null): AbstractBaseGateway {
         $select = $this->getSelect();
@@ -76,7 +79,7 @@ class Selector {
         if (isset($offset))
             $select->offset($offset);
         $select->limit(1);
-        $result = $this->DB->selectWith($select)->current();
+        $result = $this->getDb()->selectWith($select)->current();
         if (! $result) {
             $name = $this->factory->getNotFoundExceptionName();
             throw new $name();
@@ -92,7 +95,7 @@ class Selector {
             $select->offset($offset);
         if (isset($limit))
             $select->limit($limit);
-        return $this->yieldResult($this->DB->selectWith($select));
+        return $this->yieldResult($this->getDb()->selectWith($select));
     }
     /**
      *
@@ -101,7 +104,7 @@ class Selector {
      * @return \AbstractBaseGateway
      */
     public function selectOneWithSql($sql, ...$parameter): AbstractBaseGateway {
-        $result = $this->DB->selectWith($sql, ...$parameter)->current();
+        $result = $this->getDb()->selectWith($sql, ...$parameter)->current();
         if (! $result) {
             $name = $this->factory->getNotFoundExceptionName();
             throw new $name();
@@ -115,12 +118,12 @@ class Selector {
      * @return \AbstractBaseGateway[]
      */
     public function selectMultiWithSql($sql, ...$parameter): \Generator {
-        $resultset = $this->DB->selectWith($sql, ...$parameter);
+        $resultset = $this->getDb()->selectWith($sql, ...$parameter);
         return $this->yieldResult($resultset);
     }
     public function __get(string $key) {
         if ($key === 'DB')
-            return \Gateway::getAdapter($this->DB_type);
+            return $this->getDb();
         return null;
     }
 }

@@ -19,8 +19,11 @@ class Deletor {
     public function delete(array $where): int {
         $delete = new \Sql\Delete($this->table_name);
         $delete->where($where);
-        $this->DB->query($delete);
-        return $this->DB->affected_rows;
+        $this->getDb()->query($delete);
+        return $this->getDb()->affected_rows;
+    }
+    protected function getDb(): \Swango\Db\Adapter\master {
+        return \Gateway::getAdapter(\Gateway::MASTER_DB);
     }
     /**
      *
@@ -29,12 +32,12 @@ class Deletor {
      * @return int 删除行数
      */
     public function doSql(string $sql, ...$parameter): int {
-        $this->DB->query($sql, ...$parameter);
-        return $this->DB->affected_rows;
+        $this->getDb()->query($sql, ...$parameter);
+        return $this->getDb()->affected_rows;
     }
     public function __get(string $key) {
         if ($key === 'DB')
-            return \Gateway::getAdapter(\Gateway::MASTER_DB);
+            return $this->getDb();
         return null;
     }
 }

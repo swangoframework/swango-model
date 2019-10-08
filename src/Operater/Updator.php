@@ -20,8 +20,11 @@ class Updator {
     public function update(array $set, array $where): int {
         $update = new \Sql\Update($this->table_name);
         $update->set($set)->where($where);
-        $this->DB->query($update);
-        return $this->DB->affected_rows;
+        $this->getDb()->query($update);
+        return $this->getDb()->affected_rows;
+    }
+    protected function getDb(): \Swango\Db\Adapter\master {
+        return \Gateway::getAdapter(\Gateway::MASTER_DB);
     }
     /**
      *
@@ -30,12 +33,12 @@ class Updator {
      * @return int 更新的行数
      */
     public function doSql(string $sql, ...$parameter): int {
-        $this->DB->query($sql, ...$parameter);
-        return $this->DB->affected_rows;
+        $this->getDb()->query($sql, ...$parameter);
+        return $this->getDb()->affected_rows;
     }
     public function __get(string $key) {
         if ($key === 'DB')
-            return \Gateway::getAdapter(\Gateway::MASTER_DB);
+            return $this->getDb();
         return null;
     }
 }
