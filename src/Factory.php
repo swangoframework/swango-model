@@ -42,11 +42,11 @@ class Factory {
             echo sprintf(" ==> %dKb\n", memory_get_usage() / 1024);
     }
     public static function init(\Closure $constructor): void {
-        self::$func_ProfileNecessary = function (\stdClass $profile, ...$index) use ($constructor): ?\AbstractBaseGateway {
+        self::$func_ProfileNecessary = function (\stdClass $profile, ...$index) use ($constructor): ?AbstractBaseGateway {
             $instancename = $this->model_name::getInstanceName($profile, ...$index);
             return isset($instancename) ? $constructor($this->model_name . '\\' . $instancename, ...$index) : null;
         };
-        self::$func_ProfileNotNecessary = function (\stdClass $profile, ...$index) use ($constructor): ?\AbstractBaseGateway {
+        self::$func_ProfileNotNecessary = function (\stdClass $profile, ...$index) use ($constructor): ?AbstractBaseGateway {
             $instancename = $this->model_name . '\\' . $this->model_name_without_path;
             return $constructor($instancename, ...$index);
         };
