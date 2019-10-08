@@ -1,5 +1,7 @@
 <?php
 namespace Swango\Model\Traits;
+use Swango\Model\LocalCache;
+
 /**
  * 将Model以文件的形式缓存在文件目录中，在发生remove或update时会清除缓存文件
  *
@@ -13,7 +15,7 @@ trait LocalCacheTrait {
     private static $local_cache;
     protected static $cache_lifetime = 86400;
     public static function initCacheTable() {
-        self::$local_cache = \LocalCache::getInstance(static::class);
+        self::$local_cache = LocalCache::getInstance(static::class);
     }
     private static function makeKey(array $where): string {
         $ids = [];
