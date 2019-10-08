@@ -41,6 +41,7 @@ abstract class AbstractModel extends AbstractBaseGateway {
                 $addor = new $class_name($factory, static::$property_map);
             else
                 $addor = new Operater\Addor($factory, static::$property_map);
+            \SysContext::hSet('addor', static::$model_name, $addor);
         }
         return $addor;
     }
