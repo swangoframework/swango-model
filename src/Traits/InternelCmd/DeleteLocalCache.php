@@ -15,7 +15,7 @@ abstract class DeleteLocalCache extends \Swango\Cache\InternelCmd implements \Sw
         ($obj->c)::deleteCacheWithoutBroadcast(...$obj->i);
     }
     public static function broadcast(string $class_name, ...$index): int {
-        return self::sendBroadcast(1,
+        return self::sendBroadcast('Swango\\Model\\Traits\\InternelCmd\\DeleteLocalCache',
             \Json::encode([
                 'c' => $class_name,
                 'i' => $index
