@@ -2,7 +2,7 @@
 Swango\Model\AbstractBaseGateway::init();
 spl_autoload_register(
     function (string $classname): bool {
-        $file_dir = MODELDIR . str_replace('\\', '/', $classname) . '.php';
+        $file_dir = Swango\Environment::getDir()->model . str_replace('\\', '/', $classname) . '.php';
         if (file_exists($file_dir)) {
             require $file_dir;
             if (method_exists($classname, 'onLoad') && $classname::$model_name === null) {

@@ -24,7 +24,7 @@ class Factory {
         }
     }
     public static function clearAllInstances(string ...$except): void {
-        $print = defined('WORKING_MODE') && defined('WORKING_MODE_CLI') && WORKING_MODE === WORKING_MODE_CLI;
+        $print = \Swango\Environment::getWorkingMode()->isInCliScript();
         if ($print)
             echo sprintf('clear all instances: %dKb', memory_get_usage() / 1024);
         if (empty($except)) {

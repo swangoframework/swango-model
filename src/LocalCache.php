@@ -5,7 +5,7 @@ abstract class LocalCache {
     protected $size = 8192, $table, $column = [];
     public static function init() {
         foreach (self::recursiveModelCacheFolder() as $file) {
-            require MAINDIR . 'ModelCache' . $file;
+            require \Swango\Environment::getDir()->model_cache . $file;
             $model_class_name = str_replace([
                 '/',
                 '.php'
@@ -19,18 +19,18 @@ abstract class LocalCache {
         self::class;
     }
     protected static function recursiveModelCacheFolder() {
-        $base_dir = MAINDIR . 'ModelCache';
+        $base_dir = \Swango\Environment::getDir()->model_cache;
         $queue = new \SplQueue();
         $queue->enqueue('');
         do {
             $dirName = $queue->dequeue();
-            $handle = opendir("$base_dir/$dirName");
+            $handle = opendir($base_dir . $dirName);
             for($file = readdir($handle); $file !== false; $file = readdir($handle))
                 if ($file !== '.' && $file !== '..') {
-                    $path = "$dirName/$file";
-                    $dir = "$base_dir/$path";
+                    $path = $dirName . $file;
+                    $dir = $base_dir . $dirName;
                     if (is_dir($dir))
-                        $queue->enqueue($path);
+                        $queue->enqueue($path . '/');
                     elseif (explode('.', $file)[1] === 'php')
                         yield $path;
                 }
