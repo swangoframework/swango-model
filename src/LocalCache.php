@@ -25,7 +25,7 @@ abstract class LocalCache {
         do {
             $dirName = $queue->dequeue();
             $handle = opendir($base_dir . $dirName);
-            for($file = readdir($handle); $file !== false; $file = readdir($handle))
+            for($file = readdir($handle); $file; $file = readdir($handle))
                 if ($file !== '.' && $file !== '..') {
                     $path = $dirName . $file;
                     $dir = $base_dir . $dirName;
