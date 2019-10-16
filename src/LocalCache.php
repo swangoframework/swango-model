@@ -13,7 +13,7 @@ abstract class LocalCache {
                 '\\',
                 ''
             ], $file);
-            $class_name = 'ModelCache' . $model_class_name;
+            $class_name = 'ModelCache\\' . $model_class_name;
             self::$instances[substr($model_class_name, 1)] = new $class_name();
         }
         self::class;
@@ -28,10 +28,10 @@ abstract class LocalCache {
             for($file = readdir($handle); $file; $file = readdir($handle))
                 if ($file !== '.' && $file !== '..') {
                     $path = $dirName . $file;
-                    $dir = $base_dir . $dirName;
-                    if (is_dir($dir))
+                    $dir = $base_dir . $dirName . $file;
+                    if (is_dir($dir)) {
                         $queue->enqueue($path . '/');
-                    elseif (explode('.', $file)[1] === 'php')
+                    } elseif (explode('.', $file)[1] === 'php')
                         yield $path;
                 }
             closedir($handle);
