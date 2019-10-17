@@ -1,5 +1,5 @@
 <?php
-namespace Swango\Model\Operater;
+namespace Swango\Model\Operator;
 use Swango\Model\Factory;
 use Swango\Model\AbstractBaseGateway;
 

@@ -44,7 +44,7 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * 获取model对应的选择器
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Selector.php中定义class Selector
      */
-    public static function getSelector(bool $use_slave_DB = true): \Swango\Model\Operater\Selector {
+    public static function getSelector(bool $use_slave_DB = true): \Swango\Model\Operator\Selector {
         $context_key = 'selector-' . ($use_slave_DB ? 's' : 'm');
         $selector = \SysContext::hGet($context_key, static::$model_name);
         if (! isset($selector)) {
@@ -53,7 +53,7 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
             if (class_exists($class_name)) {
                 $selector = new $class_name($use_slave_DB, $factory, static::$select ?? null);
             } else {
-                $selector = new Operater\Selector($use_slave_DB, $factory, static::$select ?? null);
+                $selector = new Operator\Selector($use_slave_DB, $factory, static::$select ?? null);
             }
             \SysContext::hSet($context_key, static::$model_name, $selector);
         }
@@ -63,14 +63,14 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * 获取model对应的更新器
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Updator.php中定义class Updator
      */
-    public static function getUpdator(): \Swango\Model\Operater\Updator {
+    public static function getUpdator(): \Swango\Model\Operator\Updator {
         $updator = \SysContext::hGet('updator', static::$model_name);
         if (! isset($updator)) {
             $class_name = static::$model_name . '\\Updator';
             if (class_exists($class_name))
                 $updator = new $class_name(static::$table_name);
             else
-                $updator = new Operater\Updator(static::$table_name);
+                $updator = new Operator\Updator(static::$table_name);
             \SysContext::hSet('updator', static::$model_name, $updator);
         }
         return $updator;

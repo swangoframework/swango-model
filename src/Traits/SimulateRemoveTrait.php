@@ -2,7 +2,7 @@
 namespace Swango\Model\Traits;
 use Swango\Model\AbstractModel;
 use Swango\Model\AbstractBaseGateway;
-use Swango\Model\Operater\Deletor;
+use Swango\Model\Operator\Deletor;
 
 /**
  * 模拟删除，在删除时不真删除，而是将标记置为“已删除”
@@ -72,7 +72,7 @@ trait SimulateRemoveTrait {
             if (class_exists($name))
                 $factory->deletor = new $name(static::$table_name);
             else
-                $factory->deletor = new class(static::$table_name) extends \Operater\deletor {
+                $factory->deletor = new class(static::$table_name) extends \Operator\deletor {
                     public function delete(array $where): int {
                         $update = new \Sql\Update($this->table_name);
                         $update->set(

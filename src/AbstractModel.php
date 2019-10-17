@@ -32,7 +32,7 @@ abstract class AbstractModel extends AbstractBaseGateway {
      * 获取model对应的添加器
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Addor.php中定义class Addor
      */
-    public static function getAddor(): \Swango\Model\Operater\Addor {
+    public static function getAddor(): \Swango\Model\Operator\Addor {
         $addor = \SysContext::hGet('addor', static::$model_name);
         if (! isset($addor)) {
             $factory = static::getFactory();
@@ -40,7 +40,7 @@ abstract class AbstractModel extends AbstractBaseGateway {
             if (class_exists($class_name))
                 $addor = new $class_name($factory, static::$property_map);
             else
-                $addor = new Operater\Addor($factory, static::$property_map);
+                $addor = new Operator\Addor($factory, static::$property_map);
             \SysContext::hSet('addor', static::$model_name, $addor);
         }
         return $addor;
@@ -49,14 +49,14 @@ abstract class AbstractModel extends AbstractBaseGateway {
      * 获取model对应的删除器
      * 如需要用到，则需要在MODEL/PATH/MODELNAME/Deletor.php中定义class Deletor
      */
-    public static function getDeletor(): \Swango\Model\Operater\Deletor {
+    public static function getDeletor(): \Swango\Model\Operator\Deletor {
         $deletor = \SysContext::hGet('deletor', static::$model_name);
         if (! isset($deletor)) {
             $class_name = static::$model_name . '\\Deletor';
             if (class_exists($class_name))
                 $deletor = new $class_name(static::$table_name);
             else
-                $deletor = new Operater\Deletor(static::$table_name);
+                $deletor = new Operator\Deletor(static::$table_name);
             \SysContext::hSet('deletor', static::$model_name, $deletor);
         }
         return $deletor;
