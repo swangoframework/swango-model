@@ -7,7 +7,7 @@ namespace Swango\Model\Traits;
  */
 trait MustNotRemoveTrait {
     public function remove(): bool {
-        throw new \MustNotRemoveThisModelException(self::$model_name);
+        throw new \Swango\Model\Exception\MustNotRemoveThisModelException(self::$model_name);
     }
     protected function onRemoveMiss(): void {}
 }

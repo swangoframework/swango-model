@@ -72,7 +72,7 @@ trait SimulateRemoveTrait {
             if (class_exists($name))
                 $factory->deletor = new $name(static::$table_name);
             else
-                $factory->deletor = new class(static::$table_name) extends \Operator\deletor {
+                $factory->deletor = new class(static::$table_name) extends Deletor {
                     public function delete(array $where): int {
                         $update = new \Sql\Update($this->table_name);
                         $update->set(

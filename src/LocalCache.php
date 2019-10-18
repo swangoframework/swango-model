@@ -14,7 +14,7 @@ abstract class LocalCache {
                 ''
             ], $file);
             $class_name = 'ModelCache\\' . $model_class_name;
-            self::$instances[substr($model_class_name, 1)] = new $class_name();
+            self::$instances[$model_class_name] = new $class_name();
         }
         self::class;
     }

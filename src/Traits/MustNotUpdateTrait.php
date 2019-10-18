@@ -7,7 +7,7 @@ namespace Swango\Model\Traits;
  */
 trait MustNotUpdateTrait {
     public function update(array $new_profile): int {
-        throw new \MustNotUpdateThisModelException(static::$model_name);
+        throw new \Swango\Model\Exception\MustNotUpdateThisModelException(static::$model_name);
     }
     protected function onUpdateMiss(): void {}
 }
