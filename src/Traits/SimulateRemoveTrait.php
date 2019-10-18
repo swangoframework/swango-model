@@ -68,7 +68,7 @@ trait SimulateRemoveTrait {
     public static function getDeletor(): Deletor {
         $factory = static::getFactory();
         if (! isset($factory->deletor)) {
-            $name = static::$model_name . '\\deletor';
+            $name = static::$model_name . '\\Deletor';
             if (class_exists($name))
                 $factory->deletor = new $name(static::$table_name);
             else

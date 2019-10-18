@@ -55,7 +55,7 @@ class Factory {
         };
         self::$func_NotFoundExceptionNotExists = function (): string {
             Exception\ModelNotFoundException::$model_name = $this->model_name;
-            return '\\ModelNotFoundException';
+            return '\\Swango\\Model\\Exception\\ModelNotFoundException';
         };
     }
     public $table_name;
