@@ -5,14 +5,11 @@ namespace Swango\Model;
  * @author fdream
  */
 class Factory {
-    /**
-     *
-     * @var Closure $func_ProfileNecessary
-     * @var Closure $func_ProfileNotNecessary
-     * @var Closure $func_NotFoundExceptionExists
-     * @var Closure $func_NotFoundExceptionNotExists
-     */
-    protected static $func_ProfileNecessary, $func_ProfileNotNecessary, $func_NotFoundExceptionExists, $func_NotFoundExceptionNotExists;
+    protected const buildForProfileNecessary = 'buildForProfileNecessary';
+    protected const buildForProfileNotNecessary = 'buildForProfileNotNecessary';
+    protected const getExceptionNameWhenExists = 'getExceptionNameWhenExists';
+    protected const getExceptionNameWhenNotExists = 'getExceptionNameWhenNotExists';
+    protected static $constructor;
     public static function convertIntoObject(&$profile): void {
         if (is_array($profile))
             $profile = (object)$profile;
@@ -42,21 +39,7 @@ class Factory {
             echo sprintf(" ==> %dKb\n", memory_get_usage() / 1024);
     }
     public static function init(\Closure $constructor): void {
-        self::$func_ProfileNecessary = function (\stdClass $profile, ...$index) use ($constructor): ?AbstractBaseGateway {
-            $instancename = $this->model_name::getInstanceName($profile, ...$index);
-            return isset($instancename) ? $constructor($this->model_name . '\\' . $instancename, ...$index) : null;
-        };
-        self::$func_ProfileNotNecessary = function (\stdClass $profile, ...$index) use ($constructor): ?AbstractBaseGateway {
-            $instancename = $this->model_name . '\\' . $this->model_name_without_path;
-            return $constructor($instancename, ...$index);
-        };
-        self::$func_NotFoundExceptionExists = function (): string {
-            return $this->not_found_exception_name;
-        };
-        self::$func_NotFoundExceptionNotExists = function (): string {
-            Exception\ModelNotFoundException::$model_name = $this->model_name;
-            return '\\Swango\\Model\\Exception\\ModelNotFoundException';
-        };
+        self::$constructor = $constructor;
     }
     public $table_name;
     protected $instances, $model_name, $model_name_without_path, $index, $not_found_exception_name, $create_instance_func, $exception_name_func;
@@ -70,26 +53,36 @@ class Factory {
 
         $index = $model_name::INDEX;
         $this->index = $index;
-        $this->create_instance_func = (method_exists($model_name, 'getInstanceName') ? self::$func_ProfileNecessary : self::$func_ProfileNotNecessary)->bindTo(
-            $this);
+        $this->create_instance_func = method_exists($model_name, 'getInstanceName') ? self::buildForProfileNecessary : self::buildForProfileNotNecessary;
 
         $this->not_found_exception_name = $model_name . '\\Exception\\' . $this->model_name_without_path .
              'NotFoundException';
         // class_exists会调用autoloader，有文件IO。如果某个model没有定义NotFoundException就会极大的拖慢系统速度
-        $this->exception_name_func = (class_exists($this->not_found_exception_name) ? self::$func_NotFoundExceptionExists : self::$func_NotFoundExceptionNotExists)->bindTo(
-            $this);
+        $this->exception_name_func = class_exists($this->not_found_exception_name) ? self::getExceptionNameWhenExists : self::getExceptionNameWhenNotExists;
+    }
+    protected function buildForProfileNecessary(\stdClass $profile, ...$index): ?AbstractBaseGateway {
+        $instancename = $this->model_name::getInstanceName($profile, ...$index);
+        return isset($instancename) ? (self::$constructor)($this->model_name . '\\' . $instancename, ...$index) : null;
+    }
+    protected function buildForProfileNotNecessary(\stdClass $profile, ...$index): ?AbstractBaseGateway {
+        $instancename = $this->model_name . '\\' . $this->model_name_without_path;
+        return (self::$constructor)($instancename, ...$index);
+    }
+    protected function getExceptionNameWhenExists(): string {
+        return $this->not_found_exception_name;
+    }
+    protected function getExceptionNameWhenNotExists(): string {
+        Exception\ModelNotFoundException::$model_name = $this->model_name;
+        return '\\Swango\\Model\\Exception\\ModelNotFoundException';
     }
     public function __destruct() {
         $this->clearInstances();
-        $this->create_instance_func = null;
-        $this->not_found_exception_name = null;
-        $this->exception_name_func = null;
     }
     public function getIndex(): array {
         return $this->index;
     }
     public function getNotFoundExceptionName(): string {
-        return ($this->exception_name_func)();
+        return $this->{$this->exception_name_func}();
     }
     /**
      * 若未指定index，则会从profile中寻找主键；若要指定index，必须按照MODEL::INDEX中定义的顺序传所有主键
@@ -114,7 +107,7 @@ class Factory {
         if ($this->hasInstance(...$index))
             $instance = $this->getInstance(...$index);
         else
-            $instance = ($this->create_instance_func)($profile, ...$index);
+            $instance = $this->{($this->create_instance_func)}($profile, ...$index);
         if (! isset($instance))
             return null;
         /**
