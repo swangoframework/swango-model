@@ -20,6 +20,8 @@ abstract class LocalCache {
     }
     protected static function recursiveModelCacheFolder() {
         $base_dir = \Swango\Environment::getDir()->model_cache;
+        if (! is_dir($base_dir))
+            return;
         $queue = new \SplQueue();
         $queue->enqueue('');
         do {
