@@ -30,6 +30,8 @@ final class JsonObject extends \Swango\Model\Type {
     public function intoDB($var): ?string {
         if (! isset($var))
             return null;
+        if (true === $var)
+            return 'true';
         if (is_string($var) && is_numeric($var))
             return '"' . $var . '"';
         return $this->isJsonString($var) ? $var : \Json::encode($var);
