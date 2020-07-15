@@ -44,8 +44,11 @@ abstract class LocalCache {
             return self::$instances[$class_name];
         return null;
     }
-    public static function getAllInstances(): array {
-        return self::$instances;
+    public static function getAllInstanceSizes(): array {
+        $ret = [];
+        foreach (self::$instances as $key=>$instance)
+            $ret[$key] = $instance->table->memorySize;
+        return $ret;
     }
     protected function __construct() {
         $this->createSwooleTable($this->size);
