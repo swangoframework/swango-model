@@ -81,6 +81,10 @@ trait LocalCacheTrait {
         ], $key);
         InternelCmd\DeleteLocalCache::broadcast(static::class, $key);
     }
+    public function broadcastLocalCacheDelete(): int {
+        $key = static::makeLocalCacheKey($this->where);
+        return InternelCmd\DeleteLocalCache::broadcast(static::class, $key);
+    }
     public function remove(): bool {
         $ret = parent::remove();
         $this->_deleteCache();
