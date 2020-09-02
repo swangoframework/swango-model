@@ -8,7 +8,6 @@ use Swango\Model\IdIndexedModel;
 /**
  *
  * @author fdrea
- *
  */
 class Addor {
     /**

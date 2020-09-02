@@ -1,11 +1,14 @@
 <?php
 namespace Swango\Model;
 class AbstractBaseGatewayConstructHelper {
-    private static $flag = 0;
+    private static $flag = false;
     protected function __construct(...$index) {
         if (self::$flag)
             exit();
-        self::$flag = 1;
+        self::$flag = true;
+    }
+    protected static function swangoFrameworkModelInitialized(): bool {
+        return self::$flag;
     }
 }
 /**
@@ -21,11 +24,24 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
     /**
      * 由于构造函数是protected，只有通过闭包形式将构造权传给Factory类
      */
-    public static function init(): void {
+    private static function init(): void {
         $func_construct = (function (string $model_name, ...$index): AbstractBaseGateway {
             return new $model_name(...$index);
         });
         Factory::init($func_construct->bindTo(new AbstractBaseGatewayConstructHelper()));
+    }
+    public static function initCacheTable() {
+        // do nothing
+    }
+    abstract protected static function initModel();
+    public static function onLoad(): void {
+        if (! self::swangoFrameworkModelInitialized())
+            self::init();
+        static::$model_name = static::class;
+        if (null === static::$table_name)
+            static::$table_name = strtolower(str_replace('\\', '_', static::class));
+        static::initModel();
+        static::initCacheTable();
     }
     public static function getPropertyList(): array {
         return array_keys(static::$property_map);

@@ -20,12 +20,9 @@ final class JsonObject extends \Swango\Model\Type {
         }
         try {
             return \Json::decodeAsObject($var);
-            // if (is_array($ret) && empty($ret))
-            // return new \stdClass();
         } catch(\JsonDecodeFailException $e) {
             return $var;
         }
-        // return $ret;
     }
     public function intoDB($var): ?string {
         if (! isset($var))
