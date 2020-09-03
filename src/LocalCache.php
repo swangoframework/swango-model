@@ -75,6 +75,9 @@ abstract class LocalCache {
             throw new \Exception('Create swoole table fail');
         $this->table = $table;
     }
+    public function getSwooleTableObj(): ?\Swoole\Table {
+        return $this->table;
+    }
     public function set(string $key, array $value, int $expired = 86400): bool {
         $now = \Time\now();
         $value['__t1__'] = $now;
