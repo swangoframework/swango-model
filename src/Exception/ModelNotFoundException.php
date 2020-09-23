@@ -7,4 +7,7 @@ class ModelNotFoundException extends \Exception {
         parent::__construct(static::$model_name . ' not found');
         $this->index = $index;
     }
+    public function getIndex(): array {
+        return $this->index;
+    }
 }
