@@ -4,7 +4,7 @@ use Swango\Model\LocalCache;
 trait LocalCacheTrait {
     private static ?LocalCache $local_cache;
     protected static int $cache_lifetime = 86400;
-    public static function initCacheTable() {
+    protected static function initCacheTable() {
         self::$local_cache = LocalCache::getInstance(static::class);
     }
     protected static function makeLocalCacheKey(array $where): string {
@@ -13,19 +13,19 @@ trait LocalCacheTrait {
             $ids[] = $where[$keyname];
         return implode('`', $ids);
     }
-    protected static function loadFromDB($where, bool $for_update = false, bool $force_nornal_DB = false): ?\stdClass {
+    protected static function loadFromDB(array $where, bool $for_update = false, bool $force_master_DB = false): ?object {
         if (null === self::$local_cache) {
-            return parent::loadFromDB($where, $for_update, $force_nornal_DB);
+            return parent::loadFromDB($where, $for_update, $force_master_DB);
         }
         $key = static::makeLocalCacheKey($where);
         if ($for_update) {
-            $profile = parent::loadFromDB($where, true, $force_nornal_DB);
+            $profile = parent::loadFromDB($where, true, $force_master_DB);
         } else {
             $profile = self::$local_cache->get($key);
             if (isset($profile)) {
                 return 1 === $profile['__f__'] ? null : (object)$profile;
             }
-            $profile = parent::loadFromDB($where, false, $force_nornal_DB);
+            $profile = parent::loadFromDB($where, false, $force_master_DB);
         }
         if (isset($profile)) {
             self::$local_cache->set($key, (array)$profile, static::$cache_lifetime);

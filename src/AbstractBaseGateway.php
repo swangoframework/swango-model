@@ -1,10 +1,11 @@
 <?php
 namespace Swango\Model;
 class AbstractBaseGatewayConstructHelper {
-    private static $flag = false;
+    private static bool $flag = false;
     protected function __construct(...$index) {
-        if (self::$flag)
+        if (self::$flag) {
             exit();
+        }
         self::$flag = true;
     }
     protected static function swangoFrameworkModelInitialized(): bool {
@@ -14,13 +15,13 @@ class AbstractBaseGatewayConstructHelper {
 /**
  *
  * @author fdream
- * @property \type $property_map[]
+ * @property Type[] $property_map
  * @property string $model_name
  * @property string $table_name
  */
 abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
-    // abstract public static function onLoad();
-    abstract protected static function loadFromDB($where, bool $for_update = false, bool $force_nornal_DB = false): ?\stdClass;
+    protected const USE_MASTER_DB_FOR_INDEX_QUERY = false;
+    abstract protected static function loadFromDB(array $where, bool $for_update = false, bool $force_master_DB = false): ?object;
     /**
      * 由于构造函数是protected，只有通过闭包形式将构造权传给Factory类
      */
@@ -30,16 +31,18 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
         });
         Factory::init($func_construct->bindTo(new AbstractBaseGatewayConstructHelper()));
     }
-    public static function initCacheTable() {
+    protected static function initCacheTable() {
         // do nothing
     }
     abstract protected static function initModel();
     public static function onLoad(): void {
-        if (! self::swangoFrameworkModelInitialized())
+        if (! self::swangoFrameworkModelInitialized()) {
             self::init();
+        }
         static::$model_name = static::class;
-        if (null === static::$table_name)
+        if (null === static::$table_name) {
             static::$table_name = strtolower(str_replace('\\', '_', static::class));
+        }
         static::initModel();
         static::initCacheTable();
     }
@@ -83,25 +86,20 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
         $updator = \SysContext::hGet('updator', static::$model_name);
         if (! isset($updator)) {
             $class_name = static::$model_name . '\\Updator';
-            if (class_exists($class_name))
+            if (class_exists($class_name)) {
                 $updator = new $class_name(static::$table_name);
-            else
+            } else {
                 $updator = new Operator\Updator(static::$table_name);
+            }
             \SysContext::hSet('updator', static::$model_name, $updator);
         }
         return $updator;
     }
-    /**
-     *
-     * @var $profile \stdClass
-     */
-    protected $profile, $where;
-    public function __toString() {
-        return implode('-', array_values($this->where));
-    }
+    protected object $profile;
+    protected array $where;
     public function toArray(): array {
         $ret = (array)$this->profile;
-        foreach ($this->where as $k=>$v)
+        foreach ($this->where as $k => $v)
             $ret[$k] = $v;
         return $ret;
     }
@@ -114,35 +112,39 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      */
     protected function __construct(...$index) {
         $this->where = [];
-        foreach (static::INDEX as $k=>$v) {
-            $key = $index[$k];
-            if (array_key_exists($v, static::$property_map))
+        foreach (static::INDEX as $k => $v) {
+            $key = &$index[$k];
+            if (array_key_exists($v, static::$property_map)) {
                 $key = static::$property_map[$v]->intoProfile($key);
-            elseif (is_numeric($key))
+            } elseif (is_numeric($key)) {
                 $key = (int)$key;
+            }
             $this->where[$v] = $key;
         }
         $this->profile = new \stdClass();
-        $this->initProfile();
         static::getFactory()->saveInstance($this, ...$index);
+        $this->initProfile();
     }
-    protected function initProfile(): void {}
+    protected function initProfile(): void {
+    }
     /**
      * 从数据库加载本model所有成员，直接覆盖现有的所有成员（若存在）。
      * 若对应行不存在，则会直接抛出 PATH\MODELNAME\Exception\MODELNAMENotFoundException
      */
     public function load(bool $for_update = false): self {
-        $result = static::loadFromDB($this->where, $for_update, $this->isLoadAsForUpdate());
+        $result = static::loadFromDB($this->where, $for_update,
+            $this->isLoadAsForUpdate() || static::USE_MASTER_DB_FOR_INDEX_QUERY);
         if (! $result) {
             if (method_exists($this, 'onNotFound')) {
                 $this->onNotFound('Load');
                 return $this;
             }
             $exception_name = static::getFactory()->getNotFoundExceptionName();
-            throw new $exception_name();
+            throw new $exception_name(...array_values($this->where));
         }
-        if ($for_update && $this instanceof AbstractModel)
+        if ($for_update && $this instanceof AbstractModel) {
             $this->_transaction_serial = \Gateway::getTransactionSerial();
+        }
         $this->injectProfile($result);
         return $this;
     }
@@ -154,12 +156,15 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * 若key为model的成员但未加载，则读取数据库
      */
     public function __get($key) {
-        if (array_key_exists($key, $this->where))
+        if (array_key_exists($key, $this->where)) {
             return $this->where[$key];
-        if (! self::hasProperty($key))
+        }
+        if (! self::hasProperty($key)) {
             throw new Exception\ColumnNotExistsException($key);
-        if (! property_exists($this->profile, $key))
+        }
+        if (! property_exists($this->profile, $key)) {
             $this->load();
+        }
         return $this->profile->{$key};
     }
     /**
@@ -169,11 +174,12 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * @param mixed $value
      */
     public function __set($key, $value) {
-        if (array_key_exists($key, $this->where))
+        if (array_key_exists($key, $this->where)) {
             throw new Exception\CannotChangeIndexException();
-        elseif (self::hasProperty($key)) {
-            if ($value instanceof IdIndexedModel)
+        } elseif (self::hasProperty($key)) {
+            if ($value instanceof IdIndexedModel) {
                 $value = $value->getId();
+            }
             $value = static::$property_map[$key]->intoProfile($value);
             $this->profile->{$key} = $value;
             if (method_exists($this, 'onInject')) {
@@ -181,38 +187,42 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
                 $ob->{$key} = $value;
                 $this->onInject($ob);
             }
-        } else
+        } else {
             $this->{$key} = $value;
+        }
     }
     public function __isset($key) {
-        if (array_key_exists($key, $this->where))
+        if (array_key_exists($key, $this->where)) {
             return true;
-        elseif (self::hasProperty($key)) {
-            if (! property_exists($this->profile, $key))
+        } elseif (self::hasProperty($key)) {
+            if (! property_exists($this->profile, $key)) {
                 $this->load();
+            }
             return isset($this->profile->{$key});
         }
         return false;
     }
     public function __unset($key) {
-        if (array_key_exists($key, $this->where))
+        if (array_key_exists($key, $this->where)) {
             throw new Exception\CannotChangeIndexException();
-        elseif (self::hasProperty($key) && property_exists($this->profile, $key))
+        } elseif (self::hasProperty($key) && property_exists($this->profile, $key)) {
             unset($this->profile->{$key});
-        else
+        } else {
             trigger_error('Try to unset property not existed ' . static::$model_name . "($key)");
+        }
     }
     /**
      * 注入内容，依据设置转换每一项的类型，忽略不属于model的成员。
      * 若设置有onInject回调，将会执行
      */
     public function injectProfile($profile): self {
-        foreach ($profile as $k=>$v)
-            if (self::hasProperty($k))
+        foreach ($profile as $k => $v)
+            if (self::hasProperty($k)) {
                 $this->profile->{$k} = static::$property_map[$k]->intoProfile($v);
-
-        if (method_exists($this, 'onInject'))
+            }
+        if (method_exists($this, 'onInject')) {
             $this->onInject((object)$profile);
+        }
         return $this;
     }
     protected function removeFromInstances(): self {

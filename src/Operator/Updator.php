@@ -7,7 +7,7 @@ namespace Swango\Model\Operator;
  *
  */
 class Updator {
-    public $table_name;
+    protected string $table_name;
     public function __construct(string $table_name) {
         $this->table_name = $table_name;
     }

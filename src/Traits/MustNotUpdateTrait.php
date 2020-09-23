@@ -1,8 +1,6 @@
 <?php
 namespace Swango\Model\Traits;
 /**
- *
- * @author fdrea
  * @property func $update
  */
 trait MustNotUpdateTrait {

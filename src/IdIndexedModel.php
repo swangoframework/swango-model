@@ -8,13 +8,9 @@ abstract class IdIndexedModel extends AbstractModel {
         'id'
     ];
     public static function selectById($id, bool $for_update = false): self {
-        $ret = self::select($for_update, $id);
-        return $ret;
+        return self::select($for_update, $id);
     }
     public function getId() {
         return current($this->where);
-    }
-    public function __toString() {
-        return (string)$this->getId();
     }
 }

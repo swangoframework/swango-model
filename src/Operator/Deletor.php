@@ -7,7 +7,7 @@ namespace Swango\Model\Operator;
  *
  */
 class Deletor {
-    public $table_name;
+    protected string $table_name;
     public function __construct(string $table_name) {
         $this->table_name = $table_name;
     }
@@ -36,8 +36,9 @@ class Deletor {
         return $this->getDb()->affected_rows;
     }
     public function __get(string $key) {
-        if ($key === 'DB')
+        if ($key === 'DB') {
             return $this->getDb();
+        }
         return null;
     }
 }

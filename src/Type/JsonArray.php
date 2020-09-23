@@ -2,17 +2,21 @@
 namespace Swango\Model\Type;
 final class JsonArray extends \Swango\Model\Type {
     public function intoProfile($var): ?array {
-        if (! isset($var))
+        if (! isset($var)) {
             return null;
-        if (is_object($var))
+        }
+        if (is_object($var)) {
             return (array)$var;
-        if (is_array($var))
+        }
+        if (is_array($var)) {
             return $var;
+        }
         return \Json::decodeAsArray($var);
     }
     public function intoDB($var): ?string {
-        if (! isset($var))
+        if (! isset($var)) {
             return null;
+        }
         return is_string($var) ? $var : \Json::encode($var);
     }
 }

@@ -2,33 +2,28 @@
 namespace Swango\Model\Operator;
 use Swango\Model\Factory;
 use Swango\Model\AbstractBaseGateway;
-
 /**
- *
  * @property \Swango\Db\Adapter $DB
  * @author fdream
  */
 class Selector {
-    /**
-     *
-     * @var $DB_type int
-     * @var $factory \Factory
-     * @var $select \Sql\Select
-     */
-    public $DB_type, $factory, $select;
+    public int $DB_type;
+    public Factory $factory;
+    public ?\Sql\Select $select;
     public function __construct(bool $use_slave_DB, Factory $factory, ?\Sql\Select $select = null) {
         $this->DB_type = $use_slave_DB ? \Gateway::SLAVE_DB : \Gateway::MASTER_DB;
         $this->factory = $factory;
         $this->select = $select;
     }
     public function __destruct() {
-        $this->factory = null;
+        unset($this->factory);
         $this->select = null;
     }
     protected function getSelect(): \Sql\Select {
-        if (isset($this->select))
+        if (isset($this->select)) {
             return clone $this->select;
-        return new \Sql\Select($this->factory->table_name);
+        }
+        return new \Sql\Select($this->factory->getTableName());
     }
     protected function getDb(): \Swango\Db\Adapter {
         return \Gateway::getAdapter($this->DB_type);
@@ -37,7 +32,6 @@ class Selector {
      * 在生成起析构时，会清理掉函数中的所有对象。所以不用担心未遍历完就报错导致的协程泄露
      *
      * @param \Traversable $resultset
-     * @param bool $expect_model
      * @return \Generator
      */
     protected function yieldResult(\Traversable $resultset): \Generator {
@@ -48,8 +42,9 @@ class Selector {
         $select = $this->getSelect();
         $select->where($where)->limit(1);
         $resultset = $this->getDb()->query($select);
-        if (! is_array($resultset) || count($resultset) === 0)
+        if (! is_array($resultset) || count($resultset) === 0) {
             return false;
+        }
         $this->factory->createObject(current($resultset));
         return true;
     }
@@ -61,10 +56,11 @@ class Selector {
         return $this->getDb()->selectWith($select)->current()->s ?? 0;
     }
     public function getCount($where, string $column = '*'): int {
-        if ($column == '*')
+        if ($column == '*') {
             $expression = 'COUNT(*)';
-        else
+        } else {
             $expression = "COUNT(`$column`)";
+        }
         $select = $this->getSelect();
         $select->columns([
             'c' => new \Sql\Expression($expression)
@@ -74,10 +70,12 @@ class Selector {
     public function selectOne($where, $order = null, ?int $offset = null): AbstractBaseGateway {
         $select = $this->getSelect();
         $select->where($where);
-        if (isset($order))
+        if (isset($order)) {
             $select->order($order);
-        if (isset($offset))
+        }
+        if (isset($offset)) {
             $select->offset($offset);
+        }
         $select->limit(1);
         $result = $this->getDb()->selectWith($select)->current();
         if (! $result) {
@@ -89,19 +87,22 @@ class Selector {
     public function selectMulti($where, $order = null, ?int $limit = null, ?int $offset = null): \Generator {
         $select = $this->getSelect();
         $select->where($where);
-        if (isset($order))
+        if (isset($order)) {
             $select->order($order);
-        if (isset($offset))
+        }
+        if (isset($offset)) {
             $select->offset($offset);
-        if (isset($limit))
+        }
+        if (isset($limit)) {
             $select->limit($limit);
+        }
         return $this->yieldResult($this->getDb()->selectWith($select));
     }
     /**
      *
      * @param string|\Sql\Select $sql
      * @param null|number|string ...$parameter
-     * @return \AbstractBaseGateway
+     * @return \Swango\Model\AbstractBaseGateway
      */
     public function selectOneWithSql($sql, ...$parameter): AbstractBaseGateway {
         $result = $this->getDb()->selectWith($sql, ...$parameter)->current();
@@ -115,15 +116,16 @@ class Selector {
      *
      * @param string|\Sql\Select $sql
      * @param null|number|string ...$parameter
-     * @return \AbstractBaseGateway[]
+     * @return \Swango\Model\AbstractBaseGateway[]
      */
     public function selectMultiWithSql($sql, ...$parameter): \Generator {
         $resultset = $this->getDb()->selectWith($sql, ...$parameter);
         return $this->yieldResult($resultset);
     }
     public function __get(string $key) {
-        if ($key === 'DB')
+        if ($key === 'DB') {
             return $this->getDb();
+        }
         return null;
     }
 }
