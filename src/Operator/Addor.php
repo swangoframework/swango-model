@@ -5,7 +5,9 @@ use Swango\Model\Exception;
 use Swango\Model\AbstractModel;
 use Swango\Model\IdIndexedModel;
 class Addor {
-    protected array $_insert_values = [], $property_map, $_insert_index;
+    protected array $_insert_values = [], $_insert_index;
+    // Due to an unknown bug, $property_map need to be initialized before __construct()
+    protected ?array $property_map = null;
     protected Factory $factory;
     public function __construct(Factory $factory, array &$property_map) {
         $this->_insert_values = [];
