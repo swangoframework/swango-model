@@ -13,10 +13,10 @@ class Deletor {
     }
     /**
      *
-     * @param array $where
+     * @param \Sql\Where|\Closure|string|array $where
      * @return int 删除行数
      */
-    public function delete(array $where): int {
+    public function delete($where): int {
         $delete = new \Sql\Delete($this->table_name);
         $delete->where($where);
         $this->getDb()->query($delete);

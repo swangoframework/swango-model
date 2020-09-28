@@ -14,10 +14,10 @@ class Updator {
     /**
      *
      * @param array $set
-     * @param array $where
+     * @param \Sql\Where|\Closure|string|array $where
      * @return int 更新的行数
      */
-    public function update(array $set, array $where): int {
+    public function update(array $set, $where): int {
         $update = new \Sql\Update($this->table_name);
         $update->set($set)->where($where);
         $this->getDb()->query($update);
@@ -37,8 +37,9 @@ class Updator {
         return $this->getDb()->affected_rows;
     }
     public function __get(string $key) {
-        if ($key === 'DB')
+        if ($key === 'DB') {
             return $this->getDb();
+        }
         return null;
     }
 }
