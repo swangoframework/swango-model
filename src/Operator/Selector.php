@@ -35,8 +35,13 @@ class Selector {
      * @return \Generator
      */
     protected function yieldResult(\Traversable $resultset): \Generator {
-        foreach ($resultset as $row)
-            yield $this->factory->createObject($row);
+        foreach ($resultset as $row) {
+            $obj = $this->factory->createObject($row);
+            if (method_exists($obj, '_localCacheTrait_Set')) {
+                $obj->_localCacheTrait_Set();
+            }
+            yield $obj;
+        }
     }
     public function exists($where): bool {
         $select = $this->getSelect();
@@ -45,7 +50,10 @@ class Selector {
         if (! is_array($resultset) || count($resultset) === 0) {
             return false;
         }
-        $this->factory->createObject(current($resultset));
+        $obj = $this->factory->createObject(current($resultset));
+        if (method_exists($obj, '_localCacheTrait_Set')) {
+            $obj->_localCacheTrait_Set();
+        }
         return true;
     }
     public function getSum($where, string $column): int {
@@ -82,7 +90,11 @@ class Selector {
             $name = $this->factory->getNotFoundExceptionName();
             throw new $name();
         }
-        return $this->factory->createObject($result);
+        $obj = $this->factory->createObject($result);
+        if (method_exists($obj, '_localCacheTrait_Set')) {
+            $obj->_localCacheTrait_Set();
+        }
+        return $obj;
     }
     public function selectMulti($where, $order = null, ?int $limit = null, ?int $offset = null): \Generator {
         $select = $this->getSelect();
@@ -110,7 +122,11 @@ class Selector {
             $name = $this->factory->getNotFoundExceptionName();
             throw new $name();
         }
-        return $this->factory->createObject($result);
+        $obj = $this->factory->createObject($result);
+        if (method_exists($obj, '_localCacheTrait_Set')) {
+            $obj->_localCacheTrait_Set();
+        }
+        return $obj;
     }
     /**
      *

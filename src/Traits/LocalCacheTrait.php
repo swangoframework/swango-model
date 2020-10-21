@@ -28,7 +28,9 @@ trait LocalCacheTrait {
             $profile = parent::loadFromDB($where, false, $force_master_DB);
         }
         if (isset($profile)) {
-            self::$local_cache->set($key, (array)$profile, static::$cache_lifetime);
+            $profile_to_cache = (array)$profile;
+            $profile_to_cache['__f__'] = 0;
+            self::$local_cache->set($key, $profile_to_cache, static::$cache_lifetime);
             return $profile;
         } else {
             self::$local_cache->set($key, [
@@ -66,6 +68,12 @@ trait LocalCacheTrait {
     }
     private function broadcastLocalCacheDelete(): int {
         return InternelCmd\DeleteLocalCache::broadcast(static::class, $this->where);
+    }
+    public function _localCacheTrait_Set(): bool {
+        $profile_to_cache = (array)$this->profile;
+        $profile_to_cache['__f__'] = 0;
+        return self::$local_cache->set(static::makeLocalCacheKey($this->where), $profile_to_cache,
+            static::$cache_lifetime);
     }
     public function remove(): bool {
         $ret = parent::remove();

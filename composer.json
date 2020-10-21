@@ -1,5 +1,6 @@
 {
 	"name" : "swango/model",
+	"description" : "swango/model is a part of swango framework",
 	"license" : "Apache-2.0",
 	"keywords" : [
 		"php",
