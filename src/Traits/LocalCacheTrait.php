@@ -70,6 +70,9 @@ trait LocalCacheTrait {
         return InternelCmd\DeleteLocalCache::broadcast(static::class, $this->where);
     }
     public function _localCacheTrait_Set(): bool {
+        if (null === self::$local_cache) {
+            return false;
+        }
         $profile_to_cache = (array)$this->profile;
         $profile_to_cache['__f__'] = 0;
         return self::$local_cache->set(static::makeLocalCacheKey($this->where), $profile_to_cache,
