@@ -45,7 +45,8 @@ class Factory {
         self::$constructor = $constructor;
     }
     protected array $instances, $index;
-    protected string $table_name, $create_instance_func, $exception_name_func, $model_name, $model_name_without_path, $not_found_exception_name, $instance_size, $instance_counter;
+    protected string $table_name, $create_instance_func, $exception_name_func, $model_name, $model_name_without_path, $not_found_exception_name;
+    protected int $instance_size, $instance_counter;
     public function __construct(string $model_name, string $table_name, int $instance_size = 1024) {
         \SysContext::hSet('factory', $model_name, $this);
         $this->instances = [];
@@ -125,6 +126,7 @@ class Factory {
     }
     public function clearInstances(): self {
         $this->instances = [];
+        $this->instance_counter = 0;
         return $this;
     }
     public function hasInstance(...$index): bool {
@@ -157,7 +159,7 @@ class Factory {
     public function deleteInstance(...$index): void {
         $k = implode('`', $index);
         if (array_key_exists($k, $this->instances)) {
-            $this->instance_counter++;
+            $this->instance_counter--;
             unset($this->instances[$k]);
         }
     }
