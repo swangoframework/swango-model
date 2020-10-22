@@ -21,6 +21,7 @@ class AbstractBaseGatewayConstructHelper {
  */
 abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
     protected const USE_MASTER_DB_FOR_INDEX_QUERY = false;
+    protected const INSTANCE_SIZE = 1024;
     abstract protected static function loadFromDB(array $where, bool $for_update = false, bool $force_master_DB = false): ?object;
     /**
      * 由于构造函数是protected，只有通过闭包形式将构造权传给Factory类
@@ -55,7 +56,7 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
     public static function getFactory(): Factory {
         $factory = \SysContext::hGet('factory', static::$model_name);
         if (! isset($factory)) {
-            $factory = new Factory(static::$model_name, static::$table_name);
+            $factory = new Factory(static::$model_name, static::$table_name, static::INSTANCE_SIZE);
         }
         return $factory;
     }
