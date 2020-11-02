@@ -2,7 +2,7 @@
 namespace Swango\Model\Traits;
 use Swango\Model\LocalCache;
 trait LocalCacheTrait {
-    private static ?LocalCache $local_cache;
+    protected static ?LocalCache $local_cache;
     protected static int $cache_lifetime = 86400;
     protected static function initCacheTable() {
         self::$local_cache = LocalCache::getInstance(static::class);
