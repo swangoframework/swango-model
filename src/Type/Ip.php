@@ -11,6 +11,9 @@ final class Ip extends \Swango\Model\Type {
         return $var;
     }
     public function intoDB($var) {
+        if (! isset($var)) {
+            return null;
+        }
         if (! is_numeric($var)) {
             return ip2long($var);
         }
