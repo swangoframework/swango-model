@@ -2,6 +2,10 @@
 namespace Swango\Model;
 abstract class AbstractModel extends AbstractBaseGateway {
     protected ?int $_transaction_serial = null;
+    public function _setTransactionSerial(?int $transaction_serial): self {
+        $this->_transaction_serial = $transaction_serial;
+        return $this;
+    }
     public static function select(bool $for_update, ...$index): self {
         $factory = static::getFactory();
         if ($factory->hasInstance(...$index)) {

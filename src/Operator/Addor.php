@@ -102,7 +102,7 @@ class Addor {
             $ob = $this->factory->createObject($this->_insert_values, ...$index);
         }
         if ($this->getDb()->inTransaction()) {
-            $ob->_transaction_serial = $this->getDb()->getTransactionSerial();
+            $ob->_setTransactionSerial($this->getDb()->getTransactionSerial());
         }
         $this->afterInsert($ob);
         return $ob;
