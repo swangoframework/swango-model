@@ -26,8 +26,11 @@ class Factory {
             echo sprintf('clear all instances: %dKb', memory_get_usage() / 1024);
         }
         if (empty($except)) {
-            foreach (\SysContext::get('factory') as $factory)
-                $factory->clearInstances();
+            $factories = \SysContext::get('factory');
+            if (isset($factories)) {
+                foreach ($factories as $factory)
+                    $factory->clearInstances();
+            }
         } else {
             $map = [];
             foreach ($except as $e)
