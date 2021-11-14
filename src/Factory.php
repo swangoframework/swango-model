@@ -149,7 +149,7 @@ class Factory {
             if ($this->instance_counter < $this->instance_size) {
                 $this->instance_counter++;
             } else {
-                array_shift($this->instances);
+                unset($this->instances[array_key_first($this->instances)]);
             }
         } else {
             // 刷新array位置
