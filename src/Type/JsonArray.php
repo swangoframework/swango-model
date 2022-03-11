@@ -11,6 +11,9 @@ final class JsonArray extends \Swango\Model\Type {
         if (is_array($var)) {
             return $var;
         }
+        if ('null' === $var) {
+            return null;
+        }
         return \Json::decodeAsArray($var);
     }
     public function intoDB($var): ?string {
