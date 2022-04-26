@@ -4,7 +4,7 @@ namespace Swango\Model;
  *
  * @author fdream
  */
-class Factory {
+class Factory implements \Countable {
     protected const buildForProfileNecessary = 'buildForProfileNecessary';
     protected const buildForProfileNotNecessary = 'buildForProfileNotNecessary';
     protected const getExceptionNameWhenExists = 'getExceptionNameWhenExists';
@@ -62,10 +62,12 @@ class Factory {
         $index = $model_name::INDEX;
         $this->index = $index;
         $this->create_instance_func = method_exists($model_name,
-            'getInstanceName') ? self::buildForProfileNecessary : self::buildForProfileNotNecessary;
+            'getInstanceName'
+        ) ? self::buildForProfileNecessary : self::buildForProfileNotNecessary;
         $this->not_found_exception_name = $model_name . '\\Exception\\' . $this->model_name_without_path .
             'NotFoundException';
-        $this->exception_name_func = class_exists($this->not_found_exception_name) ? self::getExceptionNameWhenExists : self::getExceptionNameWhenNotExists;
+        $this->exception_name_func = class_exists($this->not_found_exception_name
+        ) ? self::getExceptionNameWhenExists : self::getExceptionNameWhenNotExists;
     }
     protected function buildForProfileNecessary(object $profile, ...$index): ?AbstractBaseGateway {
         $instancename = $this->model_name::getInstanceName($profile, ...$index);
@@ -165,5 +167,8 @@ class Factory {
             $this->instance_counter--;
             unset($this->instances[$k]);
         }
+    }
+    public function count(): int {
+        return $this->instance_counter;
     }
 }

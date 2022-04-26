@@ -19,7 +19,7 @@ class Selector {
         unset($this->factory);
         $this->select = null;
     }
-    protected function getSelect(): \Sql\Select {
+    public function getSelect(): \Sql\Select {
         if (isset($this->select)) {
             return clone $this->select;
         }

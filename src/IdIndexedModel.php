@@ -3,7 +3,7 @@ namespace Swango\Model;
 /**
  * 以单个id为index的model 每个model需对应数据库中的一行
  */
-abstract class IdIndexedModel extends AbstractModel {
+abstract class IdIndexedModel extends AbstractModel implements \JsonSerializable {
     const INDEX = [
         'id'
     ];
@@ -12,5 +12,8 @@ abstract class IdIndexedModel extends AbstractModel {
     }
     public function getId() {
         return current($this->where);
+    }
+    public function jsonSerialize() {
+        return $this->getId();
     }
 }

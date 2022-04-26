@@ -10,7 +10,7 @@
 		"singleton"
 	],
 	"require" : {
-		"php" : ">=7.4",
+		"php" : ">=8.1",
 		"swango/cache" : "^1.0",
 		"swango/db" : "^1.0",
 		"swango/environment" : "^1.0",

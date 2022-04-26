@@ -12,15 +12,10 @@ final class JsonObject extends \Swango\Model\Type {
             if (empty($var)) {
                 return [];
             }
-            $i = 0;
-            foreach ($var as $k => &$v) {
-                if ($k !== $i) {
-                    return (object)$var;
-                }
-                ++$i;
+            if (array_is_list($var)) {
+                return $var;
             }
-            unset($v);
-            return $var;
+            return (object)$var;
         }
         try {
             return \Json::decodeAsObject($var);

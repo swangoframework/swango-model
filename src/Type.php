@@ -8,59 +8,41 @@ namespace Swango\Model;
 abstract class Type {
     private static Type\Integer $integer;
     public static function INTEGER(): Type\Integer {
-        if (! isset(self::$integer)) {
-            self::$integer = new Type\Integer();
-        }
-        return self::$integer;
+        return self::$integer ??= new Type\Integer();
     }
     private static Type\Ip $ip;
     public static function IP(): Type\Ip {
-        if (! isset(self::$ip)) {
-            self::$ip = new Type\Ip();
-        }
-        return self::$ip;
+        return self::$ip ??= new Type\Ip();
     }
     private static Type\Boolean $boolean;
     public static function BOOLEAN(): Type\Boolean {
-        if (! isset(self::$boolean)) {
-            self::$boolean = new Type\Boolean();
-        }
-        return self::$boolean;
+        return self::$boolean ??= new Type\Boolean();
     }
     private static Type\Double $double;
     public static function DOUBLE(): Type\Double {
-        if (! isset(self::$double)) {
-            self::$double = new Type\Double();
-        }
-        return self::$double;
+        return self::$double ??= new Type\Double();
     }
     private static Type\Varchar $varchar;
     public static function VARCHAR(): Type\Varchar {
-        if (! isset(self::$varchar)) {
-            self::$varchar = new Type\Varchar();
-        }
-        return self::$varchar;
+        return self::$varchar ??= new Type\Varchar();
     }
     private static Type\JsonArray $json_array;
     public static function JSON_ARRAY(): Type\JsonArray {
-        if (! isset(self::$json_array)) {
-            self::$json_array = new Type\JsonArray();
-        }
-        return self::$json_array;
+        return self::$json_array ??= new Type\JsonArray();
     }
     private static Type\JsonObject $json_object;
     public static function JSON_OBJECT(): Type\JsonObject {
-        if (! isset(self::$json_object)) {
-            self::$json_object = new Type\JsonObject();
-        }
-        return self::$json_object;
+        return self::$json_object ??= new Type\JsonObject();
     }
     private static Type\Explode $explode;
     public static function EXPLODE(): Type\Explode {
-        if (! isset(self::$explode)) {
-            self::$explode = new Type\Explode();
-        }
-        return self::$explode;
+        return self::$explode ??= new Type\Explode();
+    }
+    public static function ENUM_INT(string $enum_class): Type\IntEnum {
+        return new Type\IntEnum($enum_class);
+    }
+    public static function ENUM_STRING(string $enum_class): Type\StringEnum {
+        return new Type\StringEnum($enum_class);
     }
     public function intoDB($var) {
         return $var;
