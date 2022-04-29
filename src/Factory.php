@@ -134,19 +134,33 @@ class Factory implements \Countable {
         $this->instance_counter = 0;
         return $this;
     }
+    protected function makeIndexKey(...$index): string {
+        $arr = [];
+        foreach ($index as $i)
+            if ($i instanceof \BackedEnum) {
+                $arr[] = $i->value;
+            } elseif ($i instanceof IdIndexedModel) {
+                $arr[] = $i->getId();
+            } else {
+                $arr[] = $i;
+            }
+        return implode('`', $arr);
+    }
     public function hasInstance(...$index): bool {
-        return array_key_exists(implode('`', $index), $this->instances);
+        return array_key_exists($this->makeIndexKey(...$index), $this->instances);
     }
     public function getInstance(...$index): AbstractBaseGateway {
+        $key = $this->makeIndexKey(...$index);
         //刷新array位置
-        $instance = $this->instances[implode('`', $index)];
+        $instance = $this->instances[$key];
         if ($this->instance_counter > $this->instance_size / 2) {
-            unset($this->instances[implode('`', $index)]);
-            $this->instances[implode('`', $index)] = $instance;
+            unset($this->instances[$key]);
+            $this->instances[$key] = $instance;
         }
         return $instance;
     }
     public function saveInstance(AbstractBaseGateway $model, ...$index): void {
+        $key = $this->makeIndexKey(...$index);
         if (! $this->hasInstance(...$index)) {
             if ($this->instance_counter < $this->instance_size) {
                 $this->instance_counter++;
@@ -156,16 +170,16 @@ class Factory implements \Countable {
         } else {
             // 刷新array位置
             if ($this->instance_counter > $this->instance_size / 2) {
-                unset($this->instances[implode('`', $index)]);
+                unset($this->instances[$key]);
             }
         }
-        $this->instances[implode('`', $index)] = $model;
+        $this->instances[$key] = $model;
     }
     public function deleteInstance(...$index): void {
-        $k = implode('`', $index);
-        if (array_key_exists($k, $this->instances)) {
+        $key = $this->makeIndexKey(...$index);
+        if (array_key_exists($key, $this->instances)) {
             $this->instance_counter--;
-            unset($this->instances[$k]);
+            unset($this->instances[$key]);
         }
     }
     public function count(): int {
