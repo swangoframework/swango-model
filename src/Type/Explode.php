@@ -9,12 +9,12 @@ final class Explode extends \Swango\Model\Type {
             return $var;
         }
         // 去除第一位的-
-        if ($var[0] == '-') {
+        if (str_starts_with($var, '-')) {
             $var = substr($var, 1);
         }
         $ret = explode('-', $var);
         if (is_array($ret)) {
-            if (count($ret) == 0 && current($ret) == '') {
+            if (count($ret) === 0 && current($ret) === '') {
                 return [];
             }
             foreach ($ret as &$t)

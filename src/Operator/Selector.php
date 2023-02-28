@@ -1,5 +1,6 @@
 <?php
 namespace Swango\Model\Operator;
+use Sql\Expression;
 use Swango\Model\Factory;
 use Swango\Model\AbstractBaseGateway;
 /**
@@ -43,7 +44,7 @@ class Selector {
             yield $obj;
         }
     }
-    public function exists($where): bool {
+    public function exists(mixed $where): bool {
         $select = $this->getSelect();
         $select->where($where)->limit(1);
         $resultset = $this->getDb()->query($select);
@@ -56,15 +57,15 @@ class Selector {
         }
         return true;
     }
-    public function getSum($where, string $column): int {
+    public function getSum(mixed $where, string $column): int {
         $select = $this->getSelect();
         $select->columns([
             's' => new \Sql\Expression("SUM(`$column`)")
         ])->where($where);
         return $this->getDb()->selectWith($select)->current()->s ?? 0;
     }
-    public function getCount($where, string $column = '*'): int {
-        if ($column == '*') {
+    public function getCount(mixed $where, string $column = '*'): int {
+        if ($column === '*') {
             $expression = 'COUNT(*)';
         } else {
             $expression = "COUNT(`$column`)";
@@ -75,15 +76,13 @@ class Selector {
         ])->where($where);
         return $this->getDb()->selectWith($select)->current()->c ?? 0;
     }
-    public function selectOne($where, $order = null, ?int $offset = null): AbstractBaseGateway {
+    public function selectOne(mixed                   $where,
+                              string|array|Expression $order = null,
+                              ?int                    $offset = null): AbstractBaseGateway {
         $select = $this->getSelect();
         $select->where($where);
-        if (isset($order)) {
-            $select->order($order);
-        }
-        if (isset($offset)) {
-            $select->offset($offset);
-        }
+        isset($order) && $select->order($order);
+        isset($offset) && $select->offset($offset);
         $select->limit(1);
         $result = $this->getDb()->selectWith($select)->current();
         if (! $result) {
@@ -96,18 +95,15 @@ class Selector {
         }
         return $obj;
     }
-    public function selectMulti($where, $order = null, ?int $limit = null, ?int $offset = null): \Generator {
+    public function selectMulti(mixed                   $where,
+                                string|array|Expression $order = null,
+                                ?int                    $limit = null,
+                                ?int                    $offset = null): \Generator {
         $select = $this->getSelect();
         $select->where($where);
-        if (isset($order)) {
-            $select->order($order);
-        }
-        if (isset($offset)) {
-            $select->offset($offset);
-        }
-        if (isset($limit)) {
-            $select->limit($limit);
-        }
+        isset($order) && $select->order($order);
+        isset($offset) && $select->offset($offset);
+        isset($limit) && $select->limit($limit);
         return $this->yieldResult($this->getDb()->selectWith($select));
     }
     /**
@@ -116,7 +112,7 @@ class Selector {
      * @param null|number|string ...$parameter
      * @return \Swango\Model\AbstractBaseGateway
      */
-    public function selectOneWithSql($sql, ...$parameter): AbstractBaseGateway {
+    public function selectOneWithSql(string|\Sql\Select $sql, mixed ...$parameter): AbstractBaseGateway {
         $result = $this->getDb()->selectWith($sql, ...$parameter)->current();
         if (! $result) {
             $name = $this->factory->getNotFoundExceptionName();
@@ -134,7 +130,7 @@ class Selector {
      * @param null|number|string ...$parameter
      * @return \Swango\Model\AbstractBaseGateway[]
      */
-    public function selectMultiWithSql($sql, ...$parameter): \Generator {
+    public function selectMultiWithSql(string|\Sql\Select $sql, mixed ...$parameter): \Generator {
         $resultset = $this->getDb()->selectWith($sql, ...$parameter);
         return $this->yieldResult($resultset);
     }

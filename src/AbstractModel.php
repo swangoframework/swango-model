@@ -28,9 +28,7 @@ abstract class AbstractModel extends AbstractBaseGateway {
             }
             $instance = $factory->createObject($profile, ...$index);
         }
-        if ($for_update) {
-            $instance->_transaction_serial = \Gateway::getTransactionSerial();
-        }
+        $for_update && $instance->_transaction_serial = \Gateway::getTransactionSerial();
         return $instance;
     }
     /**
@@ -69,27 +67,26 @@ abstract class AbstractModel extends AbstractBaseGateway {
         return $deletor;
     }
     protected static function loadFromDB(array $where, bool $for_update = false, bool $force_master_DB = false): ?object {
-        if ($for_update || $force_master_DB) {
-            $adapter = \Gateway::getAdapter(\Gateway::MASTER_DB);
-        } else {
-            $adapter = \Gateway::getAdapter(\Gateway::SLAVE_DB);
-        }
+        $adapter = \Gateway::getAdapter($for_update || $force_master_DB ? \Gateway::MASTER_DB : \Gateway::SLAVE_DB);
         if ($for_update && ! \Gateway::inTransaction()) {
             throw new \Exception('Attempt to load for update out of transaction ' . static::class);
         }
         if (count($where) > 1 || current($where) instanceof \Sql\Expression) {
             $select = new \Sql\Select(static::$table_name);
             $select->where($where);
-            if ($for_update) {
-                $select->tail(\Sql\Select::TAIL_FOR_UPDATE);
-            }
+            $for_update && $select->tail(\Sql\Select::TAIL_FOR_UPDATE);
             $result = $adapter->selectWith($select)->current();
         } else {
             $sql = 'SELECT * FROM `' . static::$table_name . '` WHERE `' . key($where) . '`=?';
-            if ($for_update) {
-                $sql .= ' FOR UPDATE';
-            }
-            $result = $adapter->selectWith($sql, current($where))->current();
+            $for_update && $sql .= ' FOR UPDATE';
+            $value = current($where);
+            $result = $adapter->selectWith($sql,
+                match (true) {
+                    $value instanceof \BackedEnum => $value->value,
+                    $value instanceof IdIndexedModel => $value->getId(),
+                    default => $value
+                }
+            )->current();
         }
         return $result;
     }
@@ -114,17 +111,14 @@ abstract class AbstractModel extends AbstractBaseGateway {
         $property_map = static::$property_map;
         foreach ($new_profile as $k => &$v) {
             if (! self::hasProperty($k)) {
-                throw new Exception\ColumnNotExistsException();
+                throw new Exception\ColumnNotExistsException($k);
             }
             if ($v instanceof \Sql\Expression) {
                 $new[$k] = $v;
                 $unset[] = $k;
-                continue;
             } else {
-                $value = $property_map[$k]->intoDB($v instanceof IdIndexedModel ? $v->getId() : $v);
+                $new_to_inject->{$k} = $new[$k] = $property_map[$k]->intoDB($v instanceof IdIndexedModel ? $v->getId() : $v);
             }
-            $new[$k] = $value;
-            $new_to_inject->{$k} = $value;
         }
         unset($v);
         $update = new \Sql\Update(static::$table_name);

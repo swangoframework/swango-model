@@ -87,7 +87,7 @@ class Addor {
             }
             throw $e;
         }
-        if (count($this->_insert_index) == 1) {
+        if (count($this->_insert_index) === 1) {
             $id_name = current($this->_insert_index);
             if (array_key_exists($id_name, $this->_insert_values)) {
                 $ob = $this->factory->createObject($this->_insert_values, $this->_insert_values[$id_name]);

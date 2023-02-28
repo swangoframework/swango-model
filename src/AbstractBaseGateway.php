@@ -22,14 +22,14 @@ class AbstractBaseGatewayConstructHelper {
 abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
     protected const USE_MASTER_DB_FOR_INDEX_QUERY = false;
     protected const INSTANCE_SIZE = 1024;
-    abstract protected static function loadFromDB(array $where, bool $for_update = false, bool $force_master_DB = false): ?object;
+    abstract protected static function loadFromDB(array $where,
+                                                  bool  $for_update = false,
+                                                  bool  $force_master_DB = false): ?object;
     /**
      * 由于构造函数是protected，只有通过闭包形式将构造权传给Factory类
      */
     private static function init(): void {
-        $func_construct = (function (string $model_name, ...$index): AbstractBaseGateway {
-            return new $model_name(...$index);
-        });
+        $func_construct = fn(string $model_name, ...$index): AbstractBaseGateway => new $model_name(...$index);
         Factory::init($func_construct->bindTo(new AbstractBaseGatewayConstructHelper()));
     }
     protected static function initCacheTable() {
@@ -41,9 +41,7 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
             self::init();
         }
         static::$model_name = static::class;
-        if (null === static::$table_name) {
-            static::$table_name = strtolower(str_replace('\\', '_', static::class));
-        }
+        static::$table_name ??= strtolower(str_replace('\\', '_', static::class));
         static::initModel();
         static::initCacheTable();
     }
@@ -54,11 +52,8 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
         return array_key_exists($key, static::$property_map) && ! in_array($key, static::INDEX);
     }
     public static function getFactory(): Factory {
-        $factory = \SysContext::hGet('factory', static::$model_name);
-        if (! isset($factory)) {
-            $factory = new Factory(static::$model_name, static::$table_name, static::INSTANCE_SIZE);
-        }
-        return $factory;
+        return \SysContext::hGet('factory', static::$model_name) ??
+            new Factory(static::$model_name, static::$table_name, static::INSTANCE_SIZE);
     }
     /**
      * 获取model对应的选择器
@@ -133,8 +128,10 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      * 若对应行不存在，则会直接抛出 PATH\MODELNAME\Exception\MODELNAMENotFoundException
      */
     public function load(bool $for_update = false): self {
-        $result = static::loadFromDB($this->where, $for_update,
-            $this->isLoadAsForUpdate() || static::USE_MASTER_DB_FOR_INDEX_QUERY);
+        $result = static::loadFromDB($this->where,
+            $for_update,
+            $this->isLoadAsForUpdate() || static::USE_MASTER_DB_FOR_INDEX_QUERY
+        );
         if (! $result) {
             if (method_exists($this, 'onNotFound')) {
                 $this->onNotFound('Load');
@@ -143,9 +140,7 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
             $exception_name = static::getFactory()->getNotFoundExceptionName();
             throw new $exception_name(...array_values($this->where));
         }
-        if ($for_update && $this instanceof AbstractModel) {
-            $this->_transaction_serial = \Gateway::getTransactionSerial();
-        }
+        $for_update && $this instanceof AbstractModel && $this->_transaction_serial = \Gateway::getTransactionSerial();
         $this->injectProfile($result);
         return $this;
     }
@@ -196,9 +191,7 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
         if (array_key_exists($key, $this->where)) {
             return true;
         } elseif (self::hasProperty($key)) {
-            if (! property_exists($this->profile, $key)) {
-                $this->load();
-            }
+            ! property_exists($this->profile, $key) && $this->load();
             return isset($this->profile->{$key});
         }
         return false;
@@ -218,12 +211,8 @@ abstract class AbstractBaseGateway extends AbstractBaseGatewayConstructHelper {
      */
     public function injectProfile($profile): self {
         foreach ($profile as $k => $v)
-            if (self::hasProperty($k)) {
-                $this->profile->{$k} = static::$property_map[$k]->intoProfile($v);
-            }
-        if (method_exists($this, 'onInject')) {
-            $this->onInject((object)$profile);
-        }
+            self::hasProperty($k) && $this->profile->{$k} = static::$property_map[$k]->intoProfile($v);
+        method_exists($this, 'onInject') && $this->onInject((object)$profile);
         return $this;
     }
     protected function removeFromInstances(): self {

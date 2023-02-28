@@ -7,13 +7,7 @@ abstract class LocalCache {
     public static function init(): void {
         foreach (self::recursiveModelCacheFolder() as $file) {
             require \Swango\Environment::getDir()->model_cache . $file;
-            $model_class_name = str_replace([
-                '/',
-                '.php'
-            ], [
-                '\\',
-                ''
-            ], $file);
+            $model_class_name = str_replace(['/', '.php'], ['\\', ''], $file);
             $class_name = 'ModelCache\\' . $model_class_name;
             self::$instances[$model_class_name] = new $class_name();
         }

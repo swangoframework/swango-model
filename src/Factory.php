@@ -5,10 +5,6 @@ namespace Swango\Model;
  * @author fdream
  */
 class Factory implements \Countable {
-    protected const buildForProfileNecessary = 'buildForProfileNecessary';
-    protected const buildForProfileNotNecessary = 'buildForProfileNotNecessary';
-    protected const getExceptionNameWhenExists = 'getExceptionNameWhenExists';
-    protected const getExceptionNameWhenNotExists = 'getExceptionNameWhenNotExists';
     protected static \Closure $constructor;
     public static function convertIntoObject(&$profile): void {
         if (is_array($profile)) {
@@ -22,52 +18,44 @@ class Factory implements \Countable {
     }
     public static function clearAllInstances(string ...$except): void {
         $print = \Swango\Environment::getWorkingMode()->isInCliScript();
-        if ($print) {
-            echo sprintf('clear all instances: %dKb', memory_get_usage() / 1024);
-        }
-        if (empty($except)) {
-            $factories = \SysContext::get('factory');
-            if (isset($factories)) {
-                foreach ($factories as $factory)
+        $print && printf('clear all instances: %dKb', memory_get_usage() / 1024);
+        $factories = \SysContext::get('factory');
+        if (isset($factories)) {
+            if (empty($except)) {
+                foreach (\SysContext::get('factory') as $factory)
                     $factory->clearInstances();
+            } else {
+                $map = array_fill_keys($except, null);
+                foreach (\SysContext::get('factory') as $model_name => $factory)
+                    ! array_key_exists($model_name, $map) && $factory->clearInstances();
             }
-        } else {
-            $map = [];
-            foreach ($except as $e)
-                $map[$e] = null;
-            foreach (\SysContext::get('factory') as $model_name => $factory)
-                if (! array_key_exists($model_name, $map)) {
-                    $factory->clearInstances();
-                }
         }
-        if ($print) {
-            echo sprintf(" ==> %dKb\n", memory_get_usage() / 1024);
-        }
+        $print && printf(" ==> %dKb\n", memory_get_usage() / 1024);
     }
     public static function init(\Closure $constructor): void {
         self::$constructor = $constructor;
     }
-    protected array $instances, $index;
-    protected string $table_name, $create_instance_func, $exception_name_func, $model_name, $model_name_without_path, $not_found_exception_name;
-    protected int $instance_size, $instance_counter;
-    public function __construct(string $model_name, string $table_name, int $instance_size = 1024) {
+    protected array $instances = [];
+    protected array $index;
+    protected $create_instance_func, $exception_name_func;
+    protected string $model_name_without_path, $not_found_exception_name;
+    protected int $instance_counter = 0;
+    public function __construct(protected readonly string $model_name,
+                                protected readonly string $table_name,
+                                protected int             $instance_size = 1024) {
         \SysContext::hSet('factory', $model_name, $this);
-        $this->instances = [];
-        $this->model_name = $model_name;
-        $this->table_name = $table_name;
-        $this->instance_size = $instance_size;
-        $this->instance_counter = 0;
         $pos = strrpos($model_name, '\\');
         $this->model_name_without_path = $pos === false ? $model_name : substr($model_name, $pos + 1);
         $index = $model_name::INDEX;
         $this->index = $index;
         $this->create_instance_func = method_exists($model_name,
             'getInstanceName'
-        ) ? self::buildForProfileNecessary : self::buildForProfileNotNecessary;
+        ) ? $this->buildForProfileNecessary(...) : $this->buildForProfileNotNecessary(...);
+
         $this->not_found_exception_name = $model_name . '\\Exception\\' . $this->model_name_without_path .
             'NotFoundException';
         $this->exception_name_func = class_exists($this->not_found_exception_name
-        ) ? self::getExceptionNameWhenExists : self::getExceptionNameWhenNotExists;
+        ) ? $this->getExceptionNameWhenExists(...) : $this->getExceptionNameWhenNotExists(...);
     }
     protected function buildForProfileNecessary(object $profile, ...$index): ?AbstractBaseGateway {
         $instancename = $this->model_name::getInstanceName($profile, ...$index);
@@ -94,7 +82,7 @@ class Factory implements \Countable {
         return $this->table_name;
     }
     public function getNotFoundExceptionName(): string {
-        return $this->{$this->exception_name_func}();
+        return ($this->exception_name_func)();
     }
     /**
      * 若未指定index，则会从profile中寻找主键；若要指定index，必须按照MODEL::INDEX中定义的顺序传所有主键
@@ -108,7 +96,6 @@ class Factory implements \Countable {
     public function createObject($profile, ...$index): ?AbstractBaseGateway {
         self::convertIntoObject($profile);
         if (empty($index)) {
-            $index = [];
             foreach ($this->index as $key)
                 if (! property_exists($profile, $key)) {
                     throw new Exception\CannotFindIndexInProfileException($key);
@@ -121,12 +108,9 @@ class Factory implements \Countable {
         if ($this->hasInstance(...$index)) {
             $instance = $this->getInstance(...$index);
         } else {
-            $instance = $this->{($this->create_instance_func)}($profile, ...$index);
+            $instance = ($this->create_instance_func)($profile, ...$index);
         }
-        if (! isset($instance)) {
-            return null;
-        }
-        $instance->injectProfile($profile);
+        $instance?->injectProfile($profile);
         return $instance;
     }
     public function clearInstances(): self {
@@ -137,13 +121,11 @@ class Factory implements \Countable {
     protected function makeIndexKey(...$index): string {
         $arr = [];
         foreach ($index as $i)
-            if ($i instanceof \BackedEnum) {
-                $arr[] = $i->value;
-            } elseif ($i instanceof IdIndexedModel) {
-                $arr[] = $i->getId();
-            } else {
-                $arr[] = $i;
-            }
+            $arr[] = match (true) {
+                $i instanceof \BackedEnum => $i->value,
+                $i instanceof IdIndexedModel => $i->getId(),
+                default => $i
+            };
         return implode('`', $arr);
     }
     public function hasInstance(...$index): bool {
