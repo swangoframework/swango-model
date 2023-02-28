@@ -40,10 +40,7 @@ class Addor {
         return array_key_exists($key, $this->_insert_values);
     }
     public function __get(string $key) {
-        if (array_key_exists($key, $this->_insert_values)) {
-            return $this->_insert_values[$key];
-        }
-        return null;
+        return array_key_exists($key, $this->_insert_values) ? $this->_insert_values[$key] : null;
     }
     public function __unset(string $key) {
         if (array_key_exists($key, $this->_insert_values)) {
@@ -51,11 +48,7 @@ class Addor {
         }
     }
     public function getObjectWithoutInsert(...$index): AbstractModel {
-        if (empty($index)) {
-            $index = [
-                -rand()
-            ];
-        }
+        empty($index) && $index = [-mt_rand()];
         $ob = $this->factory->createObject($this->_insert_values, ...$index);
         $ob->_save_flag = true;
         return $ob;

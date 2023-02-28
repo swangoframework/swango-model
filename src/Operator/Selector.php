@@ -36,11 +36,11 @@ class Selector {
      * @return \Generator
      */
     protected function yieldResult(\Traversable $resultset): \Generator {
+        $trait_exists = null;
         foreach ($resultset as $row) {
             $obj = $this->factory->createObject($row);
-            if (method_exists($obj, '_localCacheTrait_Set')) {
-                $obj->_localCacheTrait_Set();
-            }
+            $trait_exists ??= method_exists($obj, '_localCacheTrait_Set');
+            $trait_exists && $obj->_localCacheTrait_Set();
             yield $obj;
         }
     }
@@ -76,9 +76,9 @@ class Selector {
         ])->where($where);
         return $this->getDb()->selectWith($select)->current()->c ?? 0;
     }
-    public function selectOne(mixed                   $where,
-                              string|array|Expression $order = null,
-                              ?int                    $offset = null): AbstractBaseGateway {
+    public function selectOne(mixed                        $where,
+                              null|string|array|Expression $order = null,
+                              null|int                     $offset = null): AbstractBaseGateway {
         $select = $this->getSelect();
         $select->where($where);
         isset($order) && $select->order($order);
@@ -95,15 +95,15 @@ class Selector {
         }
         return $obj;
     }
-    public function selectMulti(mixed                   $where,
-                                string|array|Expression $order = null,
-                                ?int                    $limit = null,
-                                ?int                    $offset = null): \Generator {
+    public function selectMulti(mixed                        $where,
+                                null|string|array|Expression $order = null,
+                                null|int                     $limit = null,
+                                null|int                     $offset = null): \Generator {
         $select = $this->getSelect();
         $select->where($where);
         isset($order) && $select->order($order);
-        isset($offset) && $select->offset($offset);
         isset($limit) && $select->limit($limit);
+        isset($offset) && $select->offset($offset);
         return $this->yieldResult($this->getDb()->selectWith($select));
     }
     /**
