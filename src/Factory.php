@@ -37,9 +37,9 @@ class Factory implements \Countable {
     }
     protected array $instances = [];
     protected array $index;
-    protected $create_instance_func, $exception_name_func;
     protected string $model_name_without_path, $not_found_exception_name;
     protected int $instance_counter = 0;
+    protected bool $has_method_get_instance_name;
     public function __construct(protected readonly string $model_name,
                                 protected readonly string $table_name,
                                 protected int             $instance_size = 1024) {
@@ -48,29 +48,9 @@ class Factory implements \Countable {
         $this->model_name_without_path = $pos === false ? $model_name : substr($model_name, $pos + 1);
         $index = $model_name::INDEX;
         $this->index = $index;
-        $this->create_instance_func = method_exists($model_name,
-            'getInstanceName'
-        ) ? $this->buildForProfileNecessary(...) : $this->buildForProfileNotNecessary(...);
-
+        $this->has_method_get_instance_name = method_exists($model_name, 'getInstanceName');
         $this->not_found_exception_name = $model_name . '\\Exception\\' . $this->model_name_without_path .
             'NotFoundException';
-        $this->exception_name_func = class_exists($this->not_found_exception_name
-        ) ? $this->getExceptionNameWhenExists(...) : $this->getExceptionNameWhenNotExists(...);
-    }
-    protected function buildForProfileNecessary(object $profile, ...$index): ?AbstractBaseGateway {
-        $instancename = $this->model_name::getInstanceName($profile, ...$index);
-        return isset($instancename) ? (self::$constructor)($this->model_name . '\\' . $instancename, ...$index) : null;
-    }
-    protected function buildForProfileNotNecessary(object $profile, ...$index): ?AbstractBaseGateway {
-        $instancename = $this->model_name . '\\' . $this->model_name_without_path;
-        return (self::$constructor)($instancename, ...$index);
-    }
-    protected function getExceptionNameWhenExists(): string {
-        return $this->not_found_exception_name;
-    }
-    protected function getExceptionNameWhenNotExists(): string {
-        Exception\ModelNotFoundException::$model_name = $this->model_name;
-        return '\\Swango\\Model\\Exception\\ModelNotFoundException';
     }
     public function __destruct() {
         $this->clearInstances();
@@ -82,7 +62,11 @@ class Factory implements \Countable {
         return $this->table_name;
     }
     public function getNotFoundExceptionName(): string {
-        return ($this->exception_name_func)();
+        if (class_exists($this->not_found_exception_name)) {
+            return $this->not_found_exception_name;
+        }
+        Exception\ModelNotFoundException::$model_name = $this->model_name;
+        return Exception\ModelNotFoundException::class;
     }
     /**
      * 若未指定index，则会从profile中寻找主键；若要指定index，必须按照MODEL::INDEX中定义的顺序传所有主键
@@ -107,8 +91,12 @@ class Factory implements \Countable {
         }
         if ($this->hasInstance(...$index)) {
             $instance = $this->getInstance(...$index);
+        } elseif ($this->has_method_get_instance_name) {
+            $instance_name = $this->model_name::getInstanceName($profile, ...$index);
+            $instance = isset($instance_name) ? (self::$constructor)($this->model_name . '\\' . $instance_name, ...$index) : null;
         } else {
-            $instance = ($this->create_instance_func)($profile, ...$index);
+            $instance_name = $this->model_name . '\\' . $this->model_name_without_path;
+            $instance = (self::$constructor)($instance_name, ...$index);
         }
         $instance?->injectProfile($profile);
         return $instance;
