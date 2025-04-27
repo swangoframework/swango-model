@@ -13,7 +13,7 @@ abstract class IdIndexedModel extends AbstractModel implements \JsonSerializable
     public function getId() {
         return current($this->where);
     }
-    public function jsonSerialize() {
+    public function jsonSerialize(): mixed {
         return $this->getId();
     }
 }
